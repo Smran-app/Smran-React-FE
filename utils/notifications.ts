@@ -24,6 +24,9 @@ export async function registerForPushNotificationsAsync() {
     console.log('Failed to get push token for push notification!');
     return;
   }
+  
+  const token = (await Notifications.getExpoPushTokenAsync()).data;
+  return token;
 }
 
 export async function scheduleReminderNotification(title: string, body: string, date: Date) {

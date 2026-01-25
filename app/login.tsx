@@ -18,6 +18,7 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { registerForPushNotificationsAsync } from "@/utils/notifications";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_WEB_ID,
@@ -27,6 +28,7 @@ GoogleSignin.configure({
   iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
 });
 
+const BASE_URL = "https://smran-python-be-production.up.railway.app";
 export default function Login() {
   const router = useRouter();
 
@@ -43,6 +45,49 @@ export default function Login() {
     return userInfo;
   };
 
+  const loginWithBackend = async (
+    idToken: string,
+    provider: "google" | "apple",
+  ) => {
+    try {
+      const deviceToken = await registerForPushNotificationsAsync();
+      const payload = {
+        id_token: idToken,
+        device: {
+          device_token: deviceToken || "unknown_device_token",
+          device_type: Platform.OS,
+          name: Platform.select({ ios: "iPhone", android: "Android" }),
+        },
+      };
+      console.log("Payload", payload);
+      console.log("Base URL", BASE_URL);
+      const url =
+        provider === "google"
+          ? `${BASE_URL}/auth/google`
+          : `${BASE_URL}/auth/apple`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`${provider} Login Success:`, data);
+        router.replace("/(tabs)");
+      } else {
+        const errorText = await response.text();
+        console.error(`${provider} Login Failed:`, response.status, errorText);
+        // Handle error appropriately, maybe show an alert
+      }
+    } catch (error) {
+      console.error(`${provider} Login Error:`, error);
+    }
+  };
+
   const googleSignIn = async () => {
     try {
       const response = await GoogleLogin();
@@ -50,10 +95,9 @@ export default function Login() {
       // retrieve user data
       const { idToken, user } = response.data ?? {};
       if (idToken) {
-        //   await processUserData(idToken, user); // Server call to validate the token & process the user data for signing In
         console.log("User Data", user);
         console.log("Id Token", idToken);
-        router.replace("/(tabs)");
+        await loginWithBackend(idToken, "google");
       }
     } catch (error) {
       console.log("Error", error);
@@ -69,7 +113,9 @@ export default function Login() {
       });
       // signed in
       console.log(credential);
-      router.replace("/(tabs)");
+      if (credential.identityToken) {
+        await loginWithBackend(credential.identityToken, "apple");
+      }
       // sample response provided below
     } catch (e: any) {
       if (e.code === "ERR_REQUEST_CANCELED") {
