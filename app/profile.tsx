@@ -11,15 +11,24 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassCard } from "@/components/GlassCard";
 import { Colors } from "@/constants/Colors";
-
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 export default function Profile() {
   const router = useRouter();
 
-  const handleLogout = () => {
-    // Navigate back to login
-    router.replace("/login");
+  const googleSignOut = async () => {
+    try {
+      // initiates sign out process
+      await GoogleSignin.signOut();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
+  const handleLogout = async () => {
+    // Navigate back to login
+    await googleSignOut();
+    router.replace("/login");
+  };
   const handleGoBack = () => {
     router.back();
   };

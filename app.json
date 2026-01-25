@@ -15,9 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.apru02.smran"
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.smran.app"
     },
     "android": {
+      "package": "com.smran.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -29,7 +31,20 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
-    ]
+      "expo-router",
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.95845654362-0l2sf46g9m96chc70ptep3ro6c0qcdaj"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "85587290-63c2-40b2-920e-4393218874c3"
+      }
+    }
   }
 }

@@ -11,6 +11,21 @@ import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import logo from "@/assets/adaptive-icon.png";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  isErrorWithCode,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+import * as AppleAuthentication from "expo-apple-authentication";
+
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_WEB_ID,
+  scopes: ["profile", "email"], // what API you want to access on behalf of the user, default is email and profile
+  offlineAccess: true, // if you want to access Google API on behalf of the user FROM YOUR SERVER
+  forceCodeForRefreshToken: false,
+  iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
+});
 
 export default function Login() {
   const router = useRouter();
@@ -19,7 +34,53 @@ export default function Login() {
     // Navigate to tabs after successful "login"
     router.replace("/(tabs)");
   };
+  const GoogleLogin = async () => {
+    // check if users' device has google play services
+    await GoogleSignin.hasPlayServices();
 
+    // initiates signIn process
+    const userInfo = await GoogleSignin.signIn();
+    return userInfo;
+  };
+
+  const googleSignIn = async () => {
+    try {
+      const response = await GoogleLogin();
+
+      // retrieve user data
+      const { idToken, user } = response.data ?? {};
+      if (idToken) {
+        //   await processUserData(idToken, user); // Server call to validate the token & process the user data for signing In
+        console.log("User Data", user);
+        console.log("Id Token", idToken);
+        router.replace("/(tabs)");
+      }
+    } catch (error) {
+      console.log("Error", error);
+    }
+  };
+  const handleSignInApple = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      // signed in
+      console.log(credential);
+      router.replace("/(tabs)");
+      // sample response provided below
+    } catch (e: any) {
+      if (e.code === "ERR_REQUEST_CANCELED") {
+        console.log("User canceled the sign-in flow");
+        // handle that the user canceled the sign-in flow
+      } else {
+        console.log("Other error");
+        // handle other errors
+      }
+    }
+  };
   return (
     <ScreenWrapper style={styles.container}>
       <StatusBar style="dark" />
@@ -39,7 +100,7 @@ export default function Login() {
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={[styles.button, styles.appleButton]}
-            onPress={handleLogin}
+            onPress={handleSignInApple}
           >
             <Ionicons
               name="logo-apple"
@@ -51,10 +112,41 @@ export default function Login() {
               Continue with Apple
             </Text>
           </TouchableOpacity>
+          {/* <AppleAuthentication.AppleAuthenticationButton
+            buttonType={
+              AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+            }
+            buttonStyle={
+              AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+            }
+            cornerRadius={5}
+            style={{
+              width: 200,
+              height: 44,
+            }}
+            onPress={async () => {
+              try {
+                const credential = await AppleAuthentication.signInAsync({
+                  requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                  ],
+                });
+                console.log("Apple Sign In", credential);
+                // signed in
+              } catch (e: any) {
+                if (e.code === "ERR_REQUEST_CANCELED") {
+                  // handle that the user canceled the sign-in flow
+                } else {
+                  // handle other errors
+                }
+              }
+            }}
+          /> */}
 
           <TouchableOpacity
             style={[styles.button, styles.googleButton]}
-            onPress={handleLogin}
+            onPress={googleSignIn}
           >
             <Ionicons
               name="logo-google"
