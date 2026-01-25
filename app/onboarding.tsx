@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  Image,
 } from "react-native";
 import { ScreenWrapper } from "@/components/ScreenWrapper";
 import { StatusBar } from "expo-status-bar";
@@ -11,7 +12,7 @@ import { useRouter } from "expo-router";
 import { GlassCard } from "@/components/GlassCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
-
+import logo from "@/assets/adaptive-icon.png";
 export default function Onboarding() {
   const router = useRouter();
 
@@ -20,12 +21,7 @@ export default function Onboarding() {
       <StatusBar style="dark" />
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Ionicons
-            name="flower"
-            size={60}
-            color={Colors.palette.lavender}
-            style={styles.logoIcon}
-          />
+          <Image source={logo} style={styles.logoIcon} />
           <Text style={styles.logoText}>Smran</Text>
         </View>
 
@@ -38,7 +34,7 @@ export default function Onboarding() {
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.replace("/(tabs)")}
+            onPress={() => router.replace("/login")}
           >
             <Text style={styles.buttonText}>Get started</Text>
           </TouchableOpacity>
@@ -61,10 +57,13 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   logoIcon: {
-    // Multi-color emulation via text color is limited, using lavender for now
-    shadowColor: Colors.palette.skyBlue,
-    shadowRadius: 10,
-    shadowOpacity: 0.5,
+    width: 90,
+    height: 90,
+    // borderRadius: 30,
+    // marginBottom: 10,
+    // // shadowColor: Colors.palette.skyBlue,
+    // shadowRadius: 10,
+    // shadowOpacity: 0.5,
   },
   logoText: {
     fontSize: 24,

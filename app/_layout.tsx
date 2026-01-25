@@ -26,6 +26,10 @@ export default function RootLayout() {
           options={{ headerShown: false, animation: "fade" }}
         />
         <Stack.Screen
+          name="login"
+          options={{ headerShown: false, animation: "fade" }}
+        />
+        <Stack.Screen
           name="modal"
           options={{ presentation: "modal", headerTitle: "New Reminder" }}
         />

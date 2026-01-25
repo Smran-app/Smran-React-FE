@@ -33,9 +33,12 @@ export default function DashboardScreen() {
           <Ionicons name="flower" size={32} color={Colors.palette.skyBlue} />
         </View>
         <Text style={styles.headerTitle}>Smran</Text>
-        <View style={styles.avatar}>
+        <TouchableOpacity
+          style={styles.avatar}
+          onPress={() => router.push("/profile")}
+        >
           <Ionicons name="person" size={20} color="#fff" />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
