@@ -15,7 +15,7 @@ import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
 import { useEffect } from "react";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
-
+import logo from "@/assets/adaptive-icon.png";
 export default function DashboardScreen() {
   const router = useRouter();
   const { reminders, toggleReminder } = useReminderStore();
@@ -29,15 +29,15 @@ export default function DashboardScreen() {
     <ScreenWrapper style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.flowerIcon}>
-          <Ionicons name="flower" size={32} color={Colors.palette.skyBlue} />
+        <View className="flex flex-row items-center gap-3">
+          <Image source={logo} className="w-14 h-14" />
+          <Text className="text-3xl font-medium">Smran</Text>
         </View>
-        <Text style={styles.headerTitle}>Smran</Text>
         <TouchableOpacity
           style={styles.avatar}
           onPress={() => router.push("/profile")}
         >
-          <Ionicons name="person" size={20} color="#fff" />
+          <Ionicons name="person" size={20} color="#394867" />
         </TouchableOpacity>
       </View>
 
@@ -46,8 +46,10 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        <Text style={styles.greeting}>Good morning, xyz</Text>
-        <Text style={styles.subGreeting}>Start your day</Text>
+        <View className="flex px-4">
+          <Text style={styles.greeting}>Good morning, Anish</Text>
+          <Text style={styles.subGreeting}>Start your day</Text>
+        </View>
 
         <View style={styles.timelineWrapper}>
           {reminders.map((item, index) => {
@@ -73,6 +75,7 @@ export default function DashboardScreen() {
                       : Colors.palette.mint
                 }
                 isLast={index === reminders.length - 1}
+                isFirst={index === 0}
               />
             );
           })}
@@ -134,13 +137,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1e293b",
+    backgroundColor: "#F9F9FB",
     alignItems: "center",
     justifyContent: "center",
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   greeting: {
     fontSize: 26,
@@ -153,6 +156,6 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
   timelineWrapper: {
-    paddingLeft: 10,
+    // paddingLeft: 10,
   },
 });

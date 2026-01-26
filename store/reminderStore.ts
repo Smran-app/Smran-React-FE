@@ -44,7 +44,7 @@ const INITIAL_REMINDERS: Reminder[] = [
         snoozeDuration: 0,
         isOn: true,
         isImage: true,
-        image: require('../assets/adaptive-icon.png')
+        // image: require('../assets/adaptive-icon.png')
     }
 ];
 

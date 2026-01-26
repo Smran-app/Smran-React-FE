@@ -10,6 +10,7 @@ import {
   GoogleSignin,
   GoogleSigninButton,
 } from "@react-native-google-signin/google-signin";
+import "./globals.css";
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   GoogleSignin.configure({
@@ -20,7 +21,8 @@ export default function RootLayout() {
     iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
   });
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    // <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <StatusBar style="auto" />
       <Stack
         screenOptions={{

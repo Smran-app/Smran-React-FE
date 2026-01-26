@@ -89,7 +89,7 @@ export default function ModalScreen() {
 
         <Text style={styles.label}>Select Date & Time</Text>
         <View style={styles.datePickerContainer}>
-          <DateTimePicker
+          {/* <DateTimePicker
             testID="dateTimePicker"
             value={date}
             mode={"datetime"}
@@ -97,7 +97,7 @@ export default function ModalScreen() {
             onChange={onChangeDate}
             textColor={Colors.palette.lavender}
             style={{ height: 120 }}
-          />
+          /> */}
         </View>
 
         <Text style={styles.label}>Repeat</Text>
@@ -184,7 +184,7 @@ export default function ModalScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, height: 400 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   ImageBackground,
   ImageSourcePropType,
+  ViewStyle,
 } from "react-native";
 import { GlassCard } from "./GlassCard";
 import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface TaskCardProps {
   title: string;
@@ -21,6 +23,7 @@ interface TaskCardProps {
   image?: ImageSourcePropType;
   profileColor?: string; // For the dot on timeline
   isLast?: boolean;
+  isFirst?: boolean;
 }
 
 export function TaskCard({
@@ -32,58 +35,97 @@ export function TaskCard({
   hasLink,
   image,
   profileColor,
+  isLast,
+  isFirst,
 }: TaskCardProps) {
+  const renderTimeline = () => (
+    <View style={styles.timelineContainer}>
+      {!isFirst && <View style={styles.timelineLineTop} />}
+      {!isLast && <View style={styles.timelineLineBottom} />}
+      {isOn ? (
+        <LinearGradient
+          colors={
+            Colors.palette.primaryGradient as [string, string, ...string[]]
+          }
+          style={styles.activeDot}
+        >
+          <View style={styles.innerDot} />
+        </LinearGradient>
+      ) : (
+        <View style={styles.inactiveDot} />
+      )}
+    </View>
+  );
+
+  const GradientBorder = ({
+    children,
+    style,
+  }: {
+    children: React.ReactNode;
+    style?: ViewStyle;
+  }) => (
+    <View style={[styles.gradientBorderContainer, style]}>
+      <LinearGradient
+        colors={Colors.palette.primaryGradient as [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradientBorderInner}
+      />
+      <View style={styles.cardInnerContainer}>{children}</View>
+    </View>
+  );
+
   if (image) {
     return (
       <View style={styles.wrapper}>
-        {/* Timeline Dot */}
-        <View style={styles.timelineContainer}>
-          <View style={styles.timelineLine} />
-          <View
-            style={[
-              styles.dot,
-              { backgroundColor: profileColor || Colors.palette.mint },
-            ]}
-          />
-        </View>
-
+        {renderTimeline()}
         <View style={styles.cardContainer}>
-          <GlassCard style={styles.imageCard} intensity={20}>
-            <ImageBackground
-              source={image}
-              style={styles.imageBg}
-              imageStyle={{ borderRadius: 24 }}
-            >
-              <View style={styles.imageContent}>
-                <View style={styles.imageTextContainer}>
-                  <Text style={styles.imageTitle}>{title}</Text>
-                  <View style={styles.tagRow}>
-                    <Ionicons name="leaf-outline" size={14} color="#15803d" />
-                    <Text style={styles.tagText}>Home Guide</Text>
-                  </View>
-                  <Text style={styles.imageDesc}>{description}</Text>
-
-                  <View style={styles.bottomRow}>
-                    <View style={styles.timeRow}>
-                      <Ionicons name="time-outline" size={16} color="#475569" />
-                      <Text style={styles.timeText}>{time}</Text>
+          <GradientBorder>
+            <GlassCard style={styles.imageCard} intensity={20}>
+              <ImageBackground
+                source={image}
+                style={styles.imageBg}
+                imageStyle={{ borderRadius: 24 }}
+              >
+                <View style={styles.imageContent}>
+                  <View style={styles.imageTextContainer}>
+                    <Text style={styles.imageTitle}>{title}</Text>
+                    <View style={styles.tagRow}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color={Colors.palette.mint}
+                      />
+                      <Text style={styles.tagText}>Home Guide</Text>
                     </View>
-                    {/* Switch on image card? Screenshot has it */}
-                    <Switch
-                      value={isOn}
-                      onValueChange={onToggle}
-                      trackColor={{
-                        false: "#767577",
-                        true: Colors.palette.skyBlue,
-                      }}
-                      thumbColor={"#fff"}
-                      ios_backgroundColor="#3e3e3e"
-                    />
+                    <Text style={styles.imageDesc} numberOfLines={2}>
+                      {description}
+                    </Text>
+
+                    <View style={styles.bottomRow}>
+                      <View style={styles.timeRow}>
+                        <Ionicons
+                          name="time-outline"
+                          size={16}
+                          color="#475569"
+                        />
+                        <Text style={styles.timeText}>{time}</Text>
+                      </View>
+                      <Switch
+                        value={isOn}
+                        onValueChange={onToggle}
+                        trackColor={{
+                          false: "#e2e8f0",
+                          true: Colors.palette.skyBlue,
+                        }}
+                        thumbColor={"#fff"}
+                      />
+                    </View>
                   </View>
                 </View>
-              </View>
-            </ImageBackground>
-          </GlassCard>
+              </ImageBackground>
+            </GlassCard>
+          </GradientBorder>
         </View>
       </View>
     );
@@ -91,41 +133,32 @@ export function TaskCard({
 
   return (
     <View style={styles.wrapper}>
-      {/* Timeline Dot */}
-      <View style={styles.timelineContainer}>
-        <View style={styles.timelineLine} />
-        <View
-          style={[
-            styles.dot,
-            { backgroundColor: profileColor || Colors.light.tint },
-          ]}
-        />
-        <View style={[styles.timelineLine, { flex: 1 }]} />
-      </View>
-
+      {renderTimeline()}
       <View style={styles.cardContainer}>
-        <GlassCard style={styles.card}>
-          <Text style={styles.cardDesc} numberOfLines={3}>
-            {description || title}
-          </Text>
+        <GradientBorder>
+          <GlassCard style={styles.card}>
+            <Text style={styles.cardDesc} numberOfLines={4}>
+              {description || title}
+            </Text>
 
-          <View style={styles.footer}>
-            <Text style={styles.timeText}>{time}</Text>
+            <View style={styles.footer}>
+              <Text style={styles.timeText}>{time}</Text>
 
-            {hasLink ? (
-              <TouchableOpacity style={styles.visitBtn}>
-                <Text style={styles.visitText}>VISIT</Text>
-              </TouchableOpacity>
-            ) : null}
+              {hasLink ? (
+                <TouchableOpacity style={styles.visitBtn}>
+                  <Text style={styles.visitText}>VISIT</Text>
+                </TouchableOpacity>
+              ) : null}
 
-            <Switch
-              value={isOn}
-              onValueChange={onToggle}
-              trackColor={{ false: "#e2e8f0", true: Colors.palette.skyBlue }}
-              thumbColor={"#fff"}
-            />
-          </View>
-        </GlassCard>
+              <Switch
+                value={isOn}
+                onValueChange={onToggle}
+                trackColor={{ false: "#e2e8f0", true: Colors.palette.skyBlue }}
+                thumbColor={"#fff"}
+              />
+            </View>
+          </GlassCard>
+        </GradientBorder>
       </View>
     </View>
   );
@@ -138,38 +171,80 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
   timelineContainer: {
-    width: 20,
+    // width: 24,
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 12,
+    justifyContent: "center",
   },
-  timelineLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: "rgba(203, 213, 225, 0.5)", // Light gray line
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#fff",
-    marginTop: 20, // Align with top of card content approximately
+  timelineLineTop: {
     position: "absolute",
-    top: 15,
-    zIndex: 1,
+    top: 0,
+    bottom: "50%",
+    width: 1,
+    backgroundColor: "#CBD5E1",
+  },
+  timelineLineBottom: {
+    position: "absolute",
+    top: "50%",
+    bottom: 0,
+    width: 1,
+    height: 100,
+    backgroundColor: "#CBD5E1",
+  },
+  activeDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.palette.skyBlue,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  innerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#fff",
+  },
+  inactiveDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    backgroundColor: "transparent",
+  },
+  gradientBorderContainer: {
+    borderRadius: 24,
+    overflow: "hidden",
+    position: "relative",
+  },
+  gradientBorderInner: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4, // Thickness of the gradient border on the left
+  },
+  cardInnerContainer: {
+    paddingLeft: 2, // Small gap after the gradient border
   },
   cardContainer: {
     flex: 1,
   },
   card: {
-    padding: 10,
-    backgroundColor: "rgba(255,255,255,0.6)",
+    padding: 20,
+    backgroundColor: "rgba(255,255,255,0.7)",
   },
   cardDesc: {
     fontSize: 16,
-    color: "#334155",
-    marginBottom: 15,
-    lineHeight: 22,
+    color: "#1e293b",
+    marginBottom: 20,
+    lineHeight: 24,
+    fontWeight: "400",
   },
   footer: {
     flexDirection: "row",
@@ -177,24 +252,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   timeText: {
-    fontSize: 14,
-    color: "#64748B",
+    fontSize: 16,
+    color: "#1e293b",
     fontWeight: "600",
   },
   visitBtn: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 6,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
     borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
   },
   visitText: {
     fontSize: 12,
     fontWeight: "bold",
     color: "#64748B",
+    letterSpacing: 1,
   },
   // Image Card Styles
   imageCard: {
@@ -204,38 +278,43 @@ const styles = StyleSheet.create({
   },
   imageBg: {
     width: "100%",
-    height: 200, // Taller for image
+    height: 240,
     justifyContent: "flex-end",
   },
   imageContent: {
-    padding: 15,
-    // Gradient or blur could go here
+    padding: 10,
   },
   imageTextContainer: {
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: 20,
-    padding: 15,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
   imageTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#0F172A",
+    fontWeight: "600",
+    color: "#1e293b",
   },
   tagRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 4,
+    marginVertical: 6,
   },
   tagText: {
-    fontSize: 12,
-    color: "#15803d",
-    marginLeft: 4,
-    fontWeight: "600",
+    fontSize: 14,
+    color: "#64748B",
+    marginLeft: 6,
+    fontWeight: "500",
   },
   imageDesc: {
     fontSize: 14,
-    color: "#475569",
-    marginBottom: 10,
+    color: "#64748B",
+    marginBottom: 12,
+    lineHeight: 20,
   },
   bottomRow: {
     flexDirection: "row",

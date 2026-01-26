@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921513659195",
+    "project_id": "smran-fb654",
+    "storage_bucket": "smran-fb654.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921513659195:android:882729353c20a38e03851e",
+        "android_client_info": {
+          "package_name": "com.smran.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB65cjQ4SisV1S9pllmiyoKgBd5GwcAtIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

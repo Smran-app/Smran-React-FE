@@ -19,7 +19,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
-
+import * as SecureStore from "expo-secure-store";
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_WEB_ID,
   scopes: ["profile", "email"], // what API you want to access on behalf of the user, default is email and profile
@@ -28,7 +28,7 @@ GoogleSignin.configure({
   iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
 });
 
-const BASE_URL = "https://smran-python-be-production.up.railway.app";
+const BASE_URL = "https://smran-python-be.onrender.com";
 export default function Login() {
   const router = useRouter();
 
@@ -77,6 +77,7 @@ export default function Login() {
       if (response.ok) {
         const data = await response.json();
         console.log(`${provider} Login Success:`, data);
+        SecureStore.setItemAsync("access", data.access_token);
         router.replace("/(tabs)");
       } else {
         const errorText = await response.text();
@@ -144,20 +145,22 @@ export default function Login() {
         </View>
 
         <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.appleButton]}
-            onPress={handleSignInApple}
-          >
-            <Ionicons
-              name="logo-apple"
-              size={24}
-              color="white"
-              style={styles.buttonIcon}
-            />
-            <Text style={[styles.buttonText, styles.appleButtonText]}>
-              Continue with Apple
-            </Text>
-          </TouchableOpacity>
+          {Platform.OS === "ios" && (
+            <TouchableOpacity
+              style={[styles.button, styles.appleButton]}
+              onPress={handleSignInApple}
+            >
+              <Ionicons
+                name="logo-apple"
+                size={24}
+                color="white"
+                style={styles.buttonIcon}
+              />
+              <Text style={[styles.buttonText, styles.appleButtonText]}>
+                Continue with Apple
+              </Text>
+            </TouchableOpacity>
+          )}
           {/* <AppleAuthentication.AppleAuthenticationButton
             buttonType={
               AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
