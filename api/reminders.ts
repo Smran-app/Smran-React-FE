@@ -1,20 +1,29 @@
 import { apiClient } from "./client";
 
 export interface RepeatMetadata {
-  frequency: "once" | "daily" | "weekly" | "monthly" | "yearly";
-  time_of_day: string; // "HH:mm"
-  timezone: string;
+  frequency: "once" | "daily" | "weekly" | "monthly" | "yearly" | "WEEKLY" | "DAILY";
+  time_of_day?: string; // "HH:mm"
+  timezone?: string;
   start_datetime?: string; // ISO string
-  interval?: number;
+  start_date?: string;
+  end_date?: string;
+  interval?: number | string;
   weekdays?: string[]; // ["Mon", "Wed", "Fri"]
+  days?: string[];
+  days_of_week?: string[];
   month_day?: number;
   nth_weekday?: {
     weekday: string;
     n: number | "last";
   };
   ends?: "never" | "on_date" | "after_occurrences";
-  end_date?: string;
   occurrences?: number;
+  duration?: string;
+}
+
+export interface LinkMetadata {
+  title?: string;
+  image?: string;
 }
 
 export interface ReminderResponse {
@@ -23,10 +32,12 @@ export interface ReminderResponse {
   link?: string | null;
   status: "active" | "paused";
   repeat_metadata: RepeatMetadata;
-  next_run_time: string; // ISO string with offset
+  next_run_time: string | null; // ISO string with offset
+  link_metadata?: LinkMetadata | null;
 }
 
 export interface CreateReminderPayload {
+  user_id: number | null;
   name: string;
   link?: string | null;
   repeat_metadata: RepeatMetadata;

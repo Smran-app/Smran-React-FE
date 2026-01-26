@@ -137,9 +137,16 @@ export function TaskCard({
       <View style={styles.cardContainer}>
         <GradientBorder>
           <GlassCard style={styles.card}>
-            <Text style={styles.cardDesc} numberOfLines={4}>
-              {description || title}
-            </Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle} numberOfLines={2}>
+                {title}
+              </Text>
+            </View>
+            {description && (
+              <Text style={styles.cardDesc} numberOfLines={3}>
+                {description}
+              </Text>
+            )}
 
             <View style={styles.footer}>
               <Text style={styles.timeText}>{time}</Text>
@@ -238,11 +245,20 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "rgba(255,255,255,0.7)",
   },
-  cardDesc: {
-    fontSize: 16,
+  cardHeader: {
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "600",
     color: "#1e293b",
-    marginBottom: 20,
     lineHeight: 24,
+  },
+  cardDesc: {
+    fontSize: 14,
+    color: "#64748B",
+    marginBottom: 16,
+    lineHeight: 20,
     fontWeight: "400",
   },
   footer: {

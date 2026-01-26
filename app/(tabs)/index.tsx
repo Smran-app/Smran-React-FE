@@ -44,44 +44,54 @@ export default function DashboardScreen() {
   }, []);
 
   const formatRepeatSummary = (metadata: any) => {
+    if (!metadata || Object.keys(metadata).length === 0) return "No repeat";
     const { frequency, time_of_day, start_datetime } = metadata;
-    const timeStr = new Date(`2000-01-01T${time_of_day}:00`).toLocaleTimeString(
-      [],
-      {
-        hour: "numeric",
-        minute: "2-digit",
-      },
-    );
+
+    let timeStr = "";
+    if (time_of_day) {
+      try {
+        timeStr = new Date(`2000-01-01T${time_of_day}:00`).toLocaleTimeString(
+          [],
+          {
+            hour: "numeric",
+            minute: "2-digit",
+          },
+        );
+      } catch (e) {
+        timeStr = time_of_day;
+      }
+    }
 
     if (frequency === "once") {
-      const date = new Date(start_datetime);
+      const date = start_datetime ? new Date(start_datetime) : new Date();
       return `One time on ${date.toLocaleDateString([], {
         day: "numeric",
         month: "short",
-      })} at ${timeStr}`;
+      })}${timeStr ? ` at ${timeStr}` : ""}`;
     }
 
     if (frequency === "daily") {
       const interval = metadata.interval || 1;
       return interval === 1
-        ? `Daily at ${timeStr}`
-        : `Every ${interval} days at ${timeStr}`;
+        ? `Daily${timeStr ? ` at ${timeStr}` : ""}`
+        : `Every ${interval} days${timeStr ? ` at ${timeStr}` : ""}`;
     }
 
     if (frequency === "weekly") {
-      const weekdays = metadata.weekdays || [];
-      return `Weekly on ${weekdays.join(", ")} at ${timeStr}`;
+      const weekdays =
+        metadata.weekdays || metadata.days || metadata.days_of_week || [];
+      return `Weekly on ${weekdays.join(", ")}${timeStr ? ` at ${timeStr}` : ""}`;
     }
 
     if (frequency === "monthly") {
-      return `Monthly at ${timeStr}`;
+      return `Monthly${timeStr ? ` at ${timeStr}` : ""}`;
     }
 
     if (frequency === "yearly") {
-      return `Yearly at ${timeStr}`;
+      return `Yearly${timeStr ? ` at ${timeStr}` : ""}`;
     }
 
-    return `${frequency} at ${timeStr}`;
+    return `${frequency}${timeStr ? ` at ${timeStr}` : ""}`;
   };
 
   return (
@@ -148,22 +158,45 @@ export default function DashboardScreen() {
             </View>
           ) : (
             reminders.map((item, index) => {
-              const nextRun = new Date(item.next_run_time);
-              const timeString = nextRun.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
+              let timeString = "--:--";
+              if (item.next_run_time) {
+                const nextRun = new Date(item.next_run_time);
+                timeString = nextRun.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+              } else if (item.repeat_metadata?.time_of_day) {
+                // Fallback to time_of_day if next_run_time is missing
+                try {
+                  timeString = new Date(
+                    `2000-01-01T${item.repeat_metadata.time_of_day}:00`,
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                } catch (e) {}
+              }
+
+              // Decide what to show as the main title and description
+              const displayTitle =
+                item.name || item.link_metadata?.title || "Untitled Reminder";
+              const displayDesc = formatRepeatSummary(item.repeat_metadata);
 
               return (
                 <TaskCard
                   key={item.id}
-                  title={item.name}
-                  description={formatRepeatSummary(item.repeat_metadata)}
+                  title={displayTitle}
+                  description={displayDesc}
                   time={timeString}
                   isOn={item.status === "active"}
                   onToggle={() => toggleReminder(item.id, item.status)}
                   hasLink={!!item.link}
-                  profileColor={Colors.palette.lavender} // Default color for now
+                  image={
+                    item.link_metadata?.image
+                      ? { uri: item.link_metadata.image }
+                      : undefined
+                  }
+                  profileColor={Colors.palette.lavender}
                   isLast={index === reminders.length - 1}
                   isFirst={index === 0}
                 />

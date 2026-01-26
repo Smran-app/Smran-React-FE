@@ -11,13 +11,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { ScreenWrapper } from "@/components/ScreenWrapper";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { CreateReminderPayload } from "@/api/reminders";
+import { getCurrentUser, UserDetail } from "@/api/auth";
 
 type RepeatType = "once" | "daily" | "weekly" | "monthly" | "yearly";
 type EndsType = "never" | "on_date" | "after_occurrences";
@@ -29,6 +30,7 @@ export default function ModalScreen() {
   // Basic Info
   const [name, setName] = useState("");
   const [link, setLink] = useState("");
+  const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const [timezone, setTimezone] = useState(
     Intl.DateTimeFormat().resolvedOptions().timeZone,
   );
@@ -80,6 +82,18 @@ export default function ModalScreen() {
     "December",
   ];
 
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const userDetails = await getCurrentUser();
+        setUserDetails(userDetails);
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+    fetchUserDetails();
+  }, []);
+
   const handleCreate = async () => {
     if (!name.trim()) {
       Alert.alert("Error", "Please enter a reminder name");
@@ -127,6 +141,7 @@ export default function ModalScreen() {
 
     try {
       await addReminder({
+        user_id: userDetails?.id || null,
         name,
         link: link.trim() || null,
         repeat_metadata,
