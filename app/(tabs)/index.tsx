@@ -13,16 +13,31 @@ import { TaskCard } from "@/components/TaskCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import logo from "@/assets/adaptive-icon.png";
+import { getCurrentUser, UserDetail } from "@/api/auth";
+import { Skeleton } from "@/components/Skeleton";
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { reminders, toggleReminder } = useReminderStore();
-
+  const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   useEffect(() => {
     // Request permissions on mount
     registerForPushNotificationsAsync();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const user = await getCurrentUser();
+        setUserDetails(user);
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+    fetchUserDetails();
   }, []);
 
   return (
@@ -37,7 +52,16 @@ export default function DashboardScreen() {
           style={styles.avatar}
           onPress={() => router.push("/profile")}
         >
-          <Ionicons name="person" size={20} color="#394867" />
+          {!userDetails ? (
+            <Skeleton width={40} height={40} borderRadius={20} />
+          ) : userDetails.profile_img_url ? (
+            <Image
+              source={{ uri: userDetails.profile_img_url }}
+              className="w-10 h-10 rounded-full"
+            />
+          ) : (
+            <Ionicons name="person" size={20} color="#394867" />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -47,7 +71,15 @@ export default function DashboardScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <View className="flex px-4">
-          <Text style={styles.greeting}>Good morning, Anish</Text>
+          <View style={styles.greeting}>
+            {userDetails ? (
+              <Text style={styles.greetingText}>
+                Good morning, {userDetails?.first_name}
+              </Text>
+            ) : (
+              <Skeleton width={200} height={32} borderRadius={4} />
+            )}
+          </View>
           <Text style={styles.subGreeting}>Start your day</Text>
         </View>
 
@@ -146,15 +178,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   greeting: {
+    marginBottom: 5,
+    minHeight: 32,
+    justifyContent: "center",
+  },
+  greetingText: {
     fontSize: 26,
     color: "#334155",
-    marginBottom: 5,
   },
   subGreeting: {
     fontSize: 18,
     marginBottom: 30,
     color: "#64748B",
   },
+
   timelineWrapper: {
     // paddingLeft: 10,
   },

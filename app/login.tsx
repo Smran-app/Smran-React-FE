@@ -28,7 +28,8 @@ GoogleSignin.configure({
   iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
 });
 
-const BASE_URL = "https://smran-python-be.onrender.com";
+import { loginWithBackend } from "@/api/auth";
+
 export default function Login() {
   const router = useRouter();
 
@@ -45,47 +46,24 @@ export default function Login() {
     return userInfo;
   };
 
-  const loginWithBackend = async (
+  const handleLoginWithBackend = async (
     idToken: string,
     provider: "google" | "apple",
   ) => {
     try {
       const deviceToken = await registerForPushNotificationsAsync();
-      const payload = {
-        id_token: idToken,
-        device: {
-          device_token: deviceToken || "unknown_device_token",
-          device_type: Platform.OS,
-          name: Platform.select({ ios: "iPhone", android: "Android" }),
-        },
-      };
-      console.log("Payload", payload);
-      console.log("Base URL", BASE_URL);
-      const url =
-        provider === "google"
-          ? `${BASE_URL}/auth/google`
-          : `${BASE_URL}/auth/apple`;
+      const data = await loginWithBackend(
+        idToken,
+        provider,
+        deviceToken || "unknown_device_token",
+      );
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`${provider} Login Success:`, data);
-        SecureStore.setItemAsync("access", data.access_token);
-        router.replace("/(tabs)");
-      } else {
-        const errorText = await response.text();
-        console.error(`${provider} Login Failed:`, response.status, errorText);
-        // Handle error appropriately, maybe show an alert
-      }
+      console.log(`${provider} Login Success:`, data);
+      await SecureStore.setItemAsync("access", data.access_token);
+      router.replace("/(tabs)");
     } catch (error) {
       console.error(`${provider} Login Error:`, error);
+      // Handle error appropriately, maybe show an alert to the user
     }
   };
 
@@ -98,7 +76,7 @@ export default function Login() {
       if (idToken) {
         console.log("User Data", user);
         console.log("Id Token", idToken);
-        await loginWithBackend(idToken, "google");
+        await handleLoginWithBackend(idToken, "google");
       }
     } catch (error) {
       console.log("Error", error);
@@ -115,7 +93,7 @@ export default function Login() {
       // signed in
       console.log(credential);
       if (credential.identityToken) {
-        await loginWithBackend(credential.identityToken, "apple");
+        await handleLoginWithBackend(credential.identityToken, "apple");
       }
       // sample response provided below
     } catch (e: any) {

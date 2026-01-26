@@ -12,11 +12,10 @@ import {
 import { ScreenWrapper } from "@/components/ScreenWrapper";
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
 import * as Crypto from "expo-crypto";
-
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 export default function ModalScreen() {
   const router = useRouter();
   const { addReminder } = useReminderStore();
@@ -88,17 +87,7 @@ export default function ModalScreen() {
         />
 
         <Text style={styles.label}>Select Date & Time</Text>
-        <View style={styles.datePickerContainer}>
-          {/* <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode={"datetime"}
-            display="spinner"
-            onChange={onChangeDate}
-            textColor={Colors.palette.lavender}
-            style={{ height: 120 }}
-          /> */}
-        </View>
+        <View style={styles.datePickerContainer}></View>
 
         <Text style={styles.label}>Repeat</Text>
         <ScrollView

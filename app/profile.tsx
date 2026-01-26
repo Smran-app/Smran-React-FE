@@ -12,7 +12,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { GlassCard } from "@/components/GlassCard";
 import { Colors } from "@/constants/Colors";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { getCurrentUser, UserDetail } from "@/api/auth";
+import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/Skeleton";
+
 export default function Profile() {
+  const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const router = useRouter();
 
   const googleSignOut = async () => {
@@ -33,6 +38,18 @@ export default function Profile() {
     router.back();
   };
 
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const user = await getCurrentUser();
+        setUserDetails(user);
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+    fetchUserDetails();
+  }, []);
+
   return (
     <ScreenWrapper style={styles.container}>
       <View style={styles.content}>
@@ -45,10 +62,36 @@ export default function Profile() {
 
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={100} color="#cbd5e1" />
+            {userDetails?.profile_img_url ? (
+              <Image
+                source={{ uri: userDetails?.profile_img_url }}
+                className="w-24 h-24 rounded-full"
+              />
+            ) : (
+              <Ionicons name="person-circle" size={100} color="#cbd5e1" />
+            )}
           </View>
-          <Text style={styles.userName}>Guest User</Text>
-          <Text style={styles.userEmail}>guest@smran.app</Text>
+          <View style={styles.userName}>
+            {userDetails ? (
+              <Text style={styles.userNameText}>
+                {userDetails?.first_name + " " + userDetails?.last_name}
+              </Text>
+            ) : (
+              <Skeleton width={150} height={28} borderRadius={4} />
+            )}
+          </View>
+          <View style={styles.userEmail}>
+            {userDetails ? (
+              <Text style={styles.userEmailText}>{userDetails?.email}</Text>
+            ) : (
+              <Skeleton
+                width={200}
+                height={20}
+                borderRadius={4}
+                style={{ marginTop: 8 }}
+              />
+            )}
+          </View>
         </View>
 
         <View style={styles.menuContainer}>
@@ -120,15 +163,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   userName: {
+    marginBottom: 4,
+  },
+  userNameText: {
     fontSize: 24,
     fontWeight: "600",
     color: "#1e293b",
-    marginBottom: 4,
   },
   userEmail: {
+    marginTop: 4,
+  },
+  userEmailText: {
     fontSize: 16,
     color: "#64748b",
   },
+
   menuContainer: {
     gap: 16,
   },
