@@ -8,290 +8,644 @@ import {
   ScrollView,
   Switch,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { ScreenWrapper } from "@/components/ScreenWrapper";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
-import * as Crypto from "expo-crypto";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { CreateReminderPayload } from "@/api/reminders";
+
+type RepeatType = "once" | "daily" | "weekly" | "monthly" | "yearly";
+type EndsType = "never" | "on_date" | "after_occurrences";
+
 export default function ModalScreen() {
   const router = useRouter();
-  const { addReminder } = useReminderStore();
+  const { addReminder, isLoading } = useReminderStore();
 
-  const [date, setDate] = useState(new Date());
-  const [text, setText] = useState("");
+  // Basic Info
+  const [name, setName] = useState("");
   const [link, setLink] = useState("");
-  const [repeat, setRepeat] = useState("None");
-  const [profile, setProfile] = useState("Moderate");
-  const [notifyBefore, setNotifyBefore] = useState("5");
-  const [snoozeDuration, setSnoozeDuration] = useState("5");
+  const [timezone, setTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    const currentDate = selectedDate || date;
-    setDate(currentDate);
-  };
+  // Time Section
+  const [time, setTime] = useState(new Date());
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
-  const handleSave = () => {
-    if (!text) {
-      Alert.alert("Error", "Please enter reminder text");
+  // Repeat Section
+  const [repeatType, setRepeatType] = useState<RepeatType>("once");
+
+  // Specific settings based on repeatType
+  const [startDate, setStartDate] = useState(new Date());
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [interval, setInterval] = useState("1");
+  const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>([]);
+  const [monthlyOption, setMonthlyOption] = useState<"day" | "nth">("day");
+  const [monthDay, setMonthDay] = useState(new Date().getDate().toString());
+  const [nthWeekday, setNthWeekday] = useState<{
+    n: number | "last";
+    weekday: string;
+  }>({
+    n: 1,
+    weekday: "Monday",
+  });
+  const [yearlyMonth, setYearlyMonth] = useState(
+    (new Date().getMonth() + 1).toString(),
+  );
+
+  // Ends Section
+  const [endsType, setEndsType] = useState<EndsType>("never");
+  const [endDate, setEndDate] = useState(new Date());
+  const [isEndDatePickerVisible, setEndDatePickerVisible] = useState(false);
+  const [occurrences, setOccurrences] = useState("10");
+
+  const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const handleCreate = async () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Please enter a reminder name");
       return;
     }
-    addReminder({
-      id: Crypto.randomUUID(),
-      title: text,
-      link,
-      date,
-      repeat,
-      profile,
-      notifyBefore: parseInt(notifyBefore) || 5,
-      snoozeDuration: parseInt(snoozeDuration) || 5,
-      isOn: true,
+
+    const timeStr = time.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
     });
-    router.back();
+
+    const repeat_metadata: any = {
+      frequency: repeatType,
+      time_of_day: timeStr,
+      timezone: timezone,
+    };
+
+    if (repeatType === "once") {
+      repeat_metadata.start_datetime = startDate.toISOString();
+    } else {
+      repeat_metadata.interval = parseInt(interval) || 1;
+
+      if (repeatType === "weekly") {
+        repeat_metadata.weekdays = selectedWeekdays;
+      } else if (repeatType === "monthly") {
+        if (monthlyOption === "day") {
+          repeat_metadata.month_day = parseInt(monthDay);
+        } else {
+          repeat_metadata.nth_weekday = nthWeekday;
+        }
+      } else if (repeatType === "yearly") {
+        repeat_metadata.month_day = parseInt(monthDay);
+        // Backend might need month index or name, assuming simple mapping for now
+      }
+
+      // Handle Ends
+      repeat_metadata.ends = endsType;
+      if (endsType === "on_date") {
+        repeat_metadata.end_date = endDate.toISOString();
+      } else if (endsType === "after_occurrences") {
+        repeat_metadata.occurrences = parseInt(occurrences);
+      }
+    }
+
+    try {
+      await addReminder({
+        name,
+        link: link.trim() || null,
+        repeat_metadata,
+      });
+      router.back();
+    } catch (err) {
+      Alert.alert("Error", "Couldn't create reminder. Try again.");
+    }
   };
 
-  const profiles = ["Important", "Moderate", "Low"];
-  const repeats = ["None", "Daily", "Weekdays", "Weekly", "Monthly", "Yearly"];
+  const toggleWeekday = (day: string) => {
+    setSelectedWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
+  };
 
   return (
     <ScreenWrapper style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.headerBtn}>Cancel</Text>
+          <Ionicons name="close" size={24} color="#64748b" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>CREATE</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.doneBtn}>
-          <Text style={styles.doneBtnText}>DONE</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>New Reminder</Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>Reminder Text</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="What do you want to remember?"
-          value={text}
-          onChangeText={setText}
-          placeholderTextColor="#94a3b8"
-        />
+        {/* Basic Info */}
+        <View style={styles.section}>
+          <Text style={styles.label}>REMINDER NAME</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Go to Museum"
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor="#94a3b8"
+          />
 
-        <Text style={styles.label}>Link [Optional]</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="https://"
-          value={link}
-          onChangeText={setLink}
-          placeholderTextColor="#94a3b8"
-        />
-
-        <Text style={styles.label}>Select Date & Time</Text>
-        <View style={styles.datePickerContainer}></View>
-
-        <Text style={styles.label}>Repeat</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.segmentScroll}
-        >
-          {repeats.map((r) => (
-            <TouchableOpacity
-              key={r}
-              style={[
-                styles.segmentBtn,
-                repeat === r && styles.segmentBtnActive,
-              ]}
-              onPress={() => setRepeat(r)}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  repeat === r && styles.segmentTextActive,
-                ]}
-              >
-                {r.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <Text style={styles.label}>Profile</Text>
-        <View style={styles.row}>
-          {profiles.map((p) => (
-            <TouchableOpacity
-              key={p}
-              style={[
-                styles.profileBtn,
-                profile === p && styles.profileBtnActive,
-              ]}
-              onPress={() => setProfile(p)}
-            >
-              <Text
-                style={[
-                  styles.profileText,
-                  profile === p && styles.profileTextActive,
-                ]}
-              >
-                {p.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <Text style={styles.label}>LINK (OPTIONAL)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="https://..."
+            value={link}
+            onChangeText={setLink}
+            placeholderTextColor="#94a3b8"
+          />
         </View>
 
-        <View style={styles.rowSpaced}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Notify Before</Text>
-            <View style={styles.numberInput}>
-              <TextInput
-                style={styles.smallInput}
-                value={notifyBefore}
-                onChangeText={setNotifyBefore}
-                keyboardType="numeric"
-              />
-              <Text style={styles.unitText}>Mins</Text>
-            </View>
-          </View>
-          <View style={{ flex: 1, marginLeft: 20 }}>
-            <Text style={styles.label}>Snooze Duration</Text>
-            <View style={styles.numberInput}>
-              <TextInput
-                style={styles.smallInput}
-                value={snoozeDuration}
-                onChangeText={setSnoozeDuration}
-                keyboardType="numeric"
-              />
-              <Text style={styles.unitText}>Mins</Text>
-            </View>
-          </View>
+        {/* Time & Timezone */}
+        <View style={styles.section}>
+          <Text style={styles.label}>TIME OF DAY</Text>
+          <TouchableOpacity
+            style={styles.pickerTrigger}
+            onPress={() => setTimePickerVisible(true)}
+          >
+            <Text style={styles.pickerTriggerText}>
+              {time.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+            <Ionicons name="time-outline" size={20} color="#64748b" />
+          </TouchableOpacity>
+          <DateTimePickerModal
+            isVisible={isTimePickerVisible}
+            mode="time"
+            onConfirm={(date) => {
+              setTime(date);
+              setTimePickerVisible(false);
+            }}
+            onCancel={() => setTimePickerVisible(false)}
+          />
         </View>
 
-        <View style={{ height: 100 }} />
+        {/* Repeat Section */}
+        <View style={styles.section}>
+          <Text style={styles.label}>REPEAT</Text>
+          <View style={styles.typeSelector}>
+            {(
+              ["once", "daily", "weekly", "monthly", "yearly"] as RepeatType[]
+            ).map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.typeBtn,
+                  repeatType === type && styles.typeBtnActive,
+                ]}
+                onPress={() => setRepeatType(type)}
+              >
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    repeatType === type && styles.typeBtnTextActive,
+                  ]}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Dynamic Fields based on Repeat Type */}
+          {repeatType === "once" && (
+            <View style={styles.subSection}>
+              <Text style={styles.label}>DATE</Text>
+              <TouchableOpacity
+                style={styles.pickerTrigger}
+                onPress={() => setDatePickerVisible(true)}
+              >
+                <Text style={styles.pickerTriggerText}>
+                  {startDate.toLocaleDateString([], { dateStyle: "long" })}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="#64748b" />
+              </TouchableOpacity>
+              <DateTimePickerModal
+                isVisible={isDatePickerVisible}
+                mode="date"
+                onConfirm={(date) => {
+                  setStartDate(date);
+                  setDatePickerVisible(false);
+                }}
+                onCancel={() => setDatePickerVisible(false)}
+              />
+            </View>
+          )}
+
+          {repeatType !== "once" && (
+            <View style={styles.subSection}>
+              <Text style={styles.label}>
+                EVERY X {repeatType.replace("ly", "").toUpperCase()}S
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={interval}
+                onChangeText={setInterval}
+                keyboardType="numeric"
+              />
+            </View>
+          )}
+
+          {repeatType === "weekly" && (
+            <View style={styles.subSection}>
+              <Text style={styles.label}>ON DAYS</Text>
+              <View style={styles.weekdayRow}>
+                {weekdays.map((day) => (
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.weekdayChip,
+                      selectedWeekdays.includes(day) &&
+                        styles.weekdayChipActive,
+                    ]}
+                    onPress={() => toggleWeekday(day)}
+                  >
+                    <Text
+                      style={[
+                        styles.weekdayText,
+                        selectedWeekdays.includes(day) &&
+                          styles.weekdayTextActive,
+                      ]}
+                    >
+                      {day[0]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {repeatType === "monthly" && (
+            <View style={styles.subSection}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => setMonthlyOption("day")}
+              >
+                <Ionicons
+                  name={
+                    monthlyOption === "day"
+                      ? "radio-button-on"
+                      : "radio-button-off"
+                  }
+                  size={20}
+                  color={Colors.palette.lavender}
+                />
+                <Text style={styles.rowText}>Day of Month</Text>
+                {monthlyOption === "day" && (
+                  <TextInput
+                    style={[styles.smallInput, { marginLeft: "auto" }]}
+                    value={monthDay}
+                    onChangeText={setMonthDay}
+                    keyboardType="numeric"
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.row, { marginTop: 12 }]}
+                onPress={() => setMonthlyOption("nth")}
+              >
+                <Ionicons
+                  name={
+                    monthlyOption === "nth"
+                      ? "radio-button-on"
+                      : "radio-button-off"
+                  }
+                  size={20}
+                  color={Colors.palette.lavender}
+                />
+                <Text style={styles.rowText}>Nth Weekday</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Ends Section */}
+        {repeatType !== "once" && (
+          <View style={styles.section}>
+            <Text style={styles.label}>ENDS</Text>
+            <View style={styles.endsOptions}>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => setEndsType("never")}
+              >
+                <Ionicons
+                  name={
+                    endsType === "never"
+                      ? "radio-button-on"
+                      : "radio-button-off"
+                  }
+                  size={20}
+                  color={Colors.palette.lavender}
+                />
+                <Text style={styles.rowText}>Never</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.row, { marginTop: 12 }]}
+                onPress={() => setEndsType("on_date")}
+              >
+                <Ionicons
+                  name={
+                    endsType === "on_date"
+                      ? "radio-button-on"
+                      : "radio-button-off"
+                  }
+                  size={20}
+                  color={Colors.palette.lavender}
+                />
+                <Text style={styles.rowText}>On Date</Text>
+                {endsType === "on_date" && (
+                  <TouchableOpacity
+                    onPress={() => setEndDatePickerVisible(true)}
+                    style={{ marginLeft: "auto" }}
+                  >
+                    <Text style={styles.dateText}>
+                      {endDate.toLocaleDateString()}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.row, { marginTop: 12 }]}
+                onPress={() => setEndsType("after_occurrences")}
+              >
+                <Ionicons
+                  name={
+                    endsType === "after_occurrences"
+                      ? "radio-button-on"
+                      : "radio-button-off"
+                  }
+                  size={20}
+                  color={Colors.palette.lavender}
+                />
+                <Text style={styles.rowText}>After</Text>
+                {endsType === "after_occurrences" && (
+                  <View
+                    style={{
+                      marginLeft: "auto",
+                      flexDirection: "row",
+                      alignItems: "center",
+                    }}
+                  >
+                    <TextInput
+                      style={styles.smallInput}
+                      value={occurrences}
+                      onChangeText={setOccurrences}
+                      keyboardType="numeric"
+                    />
+                    <Text style={[styles.rowText, { marginLeft: 8 }]}>
+                      times
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+            <DateTimePickerModal
+              isVisible={isEndDatePickerVisible}
+              mode="date"
+              onConfirm={(date) => {
+                setEndDate(date);
+                setEndDatePickerVisible(false);
+              }}
+              onCancel={() => setEndDatePickerVisible(false)}
+            />
+          </View>
+        )}
+
+        <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* Sticky Footer */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.cancelBtn}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.cancelBtnText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.createBtn, isLoading && styles.createBtnDisabled]}
+          onPress={handleCreate}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.createBtnText}>Create Reminder</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, height: 400 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-  },
-  headerBtn: {
-    fontSize: 16,
-    color: Colors.light.text,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    backgroundColor: "#fff",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-  },
-  doneBtn: {
-    backgroundColor: "#333",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  doneBtnText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: "700",
+    color: "#1e293b",
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
   },
+  section: {
+    marginTop: 24,
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  subSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+  },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 10,
-    marginTop: 20,
-    color: "#334155",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94a3b8",
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
     fontSize: 16,
-  },
-  datePickerContainer: {
-    backgroundColor: "rgba(255,255,255,0.5)",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  segmentScroll: {
-    flexDirection: "row",
-  },
-  segmentBtn: {
-    paddingHorizontal: 16,
+    color: "#334155",
     paddingVertical: 8,
-    backgroundColor: "#e2e8f0",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    marginBottom: 16,
+  },
+  pickerTrigger: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 12,
+  },
+  pickerTriggerText: {
+    fontSize: 16,
+    color: "#334155",
+    fontWeight: "500",
+  },
+  typeSelector: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  typeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
-    marginRight: 10,
+    backgroundColor: "#f1f5f9",
   },
-  segmentBtnActive: {
-    backgroundColor: "#333",
+  typeBtnActive: {
+    backgroundColor: Colors.palette.lavender,
   },
-  segmentText: {
-    fontSize: 12,
-    color: "#64748B",
+  typeBtnText: {
+    fontSize: 13,
+    color: "#64748b",
     fontWeight: "600",
   },
-  segmentTextActive: {
+  typeBtnTextActive: {
+    color: "#fff",
+  },
+  weekdayRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  weekdayChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f1f5f9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  weekdayChipActive: {
+    backgroundColor: Colors.palette.lavender,
+  },
+  weekdayText: {
+    fontSize: 14,
+    color: "#64748b",
+    fontWeight: "600",
+  },
+  weekdayTextActive: {
     color: "#fff",
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  profileBtn: {
-    flex: 1,
     alignItems: "center",
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    marginHorizontal: 4,
   },
-  profileBtnActive: {
-    backgroundColor: "#333",
-    borderColor: "#333",
-  },
-  profileText: {
-    fontSize: 12,
-    fontWeight: "600",
+  rowText: {
+    fontSize: 16,
     color: "#334155",
-  },
-  profileTextActive: {
-    color: "#fff",
-  },
-  rowSpaced: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  numberInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    paddingHorizontal: 10,
+    marginLeft: 12,
   },
   smallInput: {
-    padding: 10,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     width: 50,
-    fontSize: 16,
     textAlign: "center",
+    fontSize: 14,
+    fontWeight: "600",
   },
-  unitText: {
+  dateText: {
+    color: Colors.palette.lavender,
+    fontWeight: "600",
     fontSize: 16,
-    color: "#64748B",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
+    gap: 12,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#f1f5f9",
+  },
+  cancelBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#64748b",
+  },
+  createBtn: {
+    flex: 2,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: Colors.palette.lavender,
+  },
+  createBtnDisabled: {
+    opacity: 0.7,
+  },
+  createBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  endsOptions: {
+    marginTop: 8,
   },
 });

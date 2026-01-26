@@ -236,7 +236,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    padding: 20,
     backgroundColor: "rgba(255,255,255,0.7)",
   },
   cardDesc: {

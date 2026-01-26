@@ -21,11 +21,14 @@ import { Skeleton } from "@/components/Skeleton";
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { reminders, toggleReminder } = useReminderStore();
+  const { reminders, isLoading, fetchReminders, toggleReminder } =
+    useReminderStore();
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
+
   useEffect(() => {
     // Request permissions on mount
     registerForPushNotificationsAsync();
+    fetchReminders();
   }, []);
 
   useEffect(() => {
@@ -39,6 +42,47 @@ export default function DashboardScreen() {
     };
     fetchUserDetails();
   }, []);
+
+  const formatRepeatSummary = (metadata: any) => {
+    const { frequency, time_of_day, start_datetime } = metadata;
+    const timeStr = new Date(`2000-01-01T${time_of_day}:00`).toLocaleTimeString(
+      [],
+      {
+        hour: "numeric",
+        minute: "2-digit",
+      },
+    );
+
+    if (frequency === "once") {
+      const date = new Date(start_datetime);
+      return `One time on ${date.toLocaleDateString([], {
+        day: "numeric",
+        month: "short",
+      })} at ${timeStr}`;
+    }
+
+    if (frequency === "daily") {
+      const interval = metadata.interval || 1;
+      return interval === 1
+        ? `Daily at ${timeStr}`
+        : `Every ${interval} days at ${timeStr}`;
+    }
+
+    if (frequency === "weekly") {
+      const weekdays = metadata.weekdays || [];
+      return `Weekly on ${weekdays.join(", ")} at ${timeStr}`;
+    }
+
+    if (frequency === "monthly") {
+      return `Monthly at ${timeStr}`;
+    }
+
+    if (frequency === "yearly") {
+      return `Yearly at ${timeStr}`;
+    }
+
+    return `${frequency} at ${timeStr}`;
+  };
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -84,33 +128,48 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.timelineWrapper}>
-          {reminders.map((item, index) => {
-            const timeString = new Date(item.date).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            return (
-              <TaskCard
-                key={item.id}
-                title={item.title}
-                description={item.title} // Or description field if added
-                time={timeString}
-                isOn={item.isOn}
-                onToggle={(val) => toggleReminder(item.id, val)}
-                hasLink={!!item.link}
-                image={item.isImage ? item.image : undefined}
-                profileColor={
-                  item.profile === "Important"
-                    ? "#ef4444"
-                    : item.profile === "Moderate"
-                      ? Colors.palette.lavender
-                      : Colors.palette.mint
-                }
-                isLast={index === reminders.length - 1}
-                isFirst={index === 0}
+          {isLoading ? (
+            <View className="gap-4 px-4">
+              <Skeleton width="100%" height={100} borderRadius={16} />
+              <Skeleton width="100%" height={100} borderRadius={16} />
+              <Skeleton width="100%" height={100} borderRadius={16} />
+            </View>
+          ) : reminders.length === 0 ? (
+            <View className="flex items-center justify-center pt-20">
+              <Ionicons
+                name="notifications-off-outline"
+                size={48}
+                color="#cbd5e1"
               />
-            );
-          })}
+              <Text className="text-slate-400 mt-4 text-lg">
+                No reminders found
+              </Text>
+              <Text className="text-slate-300">Tap + to create one</Text>
+            </View>
+          ) : (
+            reminders.map((item, index) => {
+              const nextRun = new Date(item.next_run_time);
+              const timeString = nextRun.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+
+              return (
+                <TaskCard
+                  key={item.id}
+                  title={item.name}
+                  description={formatRepeatSummary(item.repeat_metadata)}
+                  time={timeString}
+                  isOn={item.status === "active"}
+                  onToggle={() => toggleReminder(item.id, item.status)}
+                  hasLink={!!item.link}
+                  profileColor={Colors.palette.lavender} // Default color for now
+                  isLast={index === reminders.length - 1}
+                  isFirst={index === 0}
+                />
+              );
+            })
+          )}
         </View>
       </ScrollView>
 

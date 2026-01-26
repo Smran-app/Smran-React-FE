@@ -50,7 +50,7 @@ export function GlassCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
+    // borderRadius: 24,
     overflow: "hidden",
     borderWidth: 1,
   },
