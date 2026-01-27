@@ -18,7 +18,9 @@
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.smran.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record voice reminders.",
+        "NSSpeechRecognitionUsageDescription": "This app needs access to speech recognition to convert your voice into text."
       }
     },
     "android": {
@@ -29,7 +31,10 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,7 +48,20 @@
           "iosUrlScheme": "com.googleusercontent.apps.95845654362-0l2sf46g9m96chc70ptep3ro6c0qcdaj"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Smran to access your microphone to record voice reminders."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Smran to access your microphone to record voice reminders.",
+          "speechRecognitionPermission": "Allow Smran to use speech recognition to convert your voice into text."
+        }
+      ]
     ],
     "extra": {
       "router": {},

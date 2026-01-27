@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
-export const BASE_URL = "https://118820ae3077.ngrok-free.app";
+export const BASE_URL = "https://384368b309ea.ngrok-free.app";
 
 interface FetchOptions extends RequestInit {
   timeout?: number;
