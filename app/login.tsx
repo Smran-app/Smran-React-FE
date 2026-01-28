@@ -52,6 +52,7 @@ export default function Login() {
   ) => {
     try {
       const deviceToken = await registerForPushNotificationsAsync();
+      console.log("Device Token", deviceToken);
       const data = await loginWithBackend(
         idToken,
         provider,

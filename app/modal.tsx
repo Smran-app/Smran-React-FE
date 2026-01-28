@@ -252,7 +252,7 @@ export default function ModalScreen() {
                 onPress={() => setDatePickerVisible(true)}
               >
                 <Text style={styles.pickerTriggerText}>
-                  {startDate.toLocaleDateString([], { dateStyle: "long" })}
+                  {startDate.toLocaleDateString("en-US", { dateStyle: "long" })}
                 </Text>
                 <Ionicons name="calendar-outline" size={20} color="#64748b" />
               </TouchableOpacity>

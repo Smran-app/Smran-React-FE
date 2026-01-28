@@ -7,6 +7,7 @@ import {
   ImageBackground,
   ImageSourcePropType,
   ViewStyle,
+  useColorScheme,
 } from "react-native";
 import { GlassCard } from "./GlassCard";
 import { Colors } from "@/constants/Colors";
@@ -38,6 +39,179 @@ export function TaskCard({
   isLast,
   isFirst,
 }: TaskCardProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const styles = StyleSheet.create({
+    wrapper: {
+      flexDirection: "row",
+      marginBottom: 20,
+      minHeight: 120,
+    },
+    timelineContainer: {
+      // width: 24,
+      alignItems: "center",
+      marginRight: 12,
+      justifyContent: "center",
+    },
+    timelineLineTop: {
+      position: "absolute",
+      top: 0,
+      bottom: "50%",
+      width: 1,
+      backgroundColor: "#CBD5E1",
+    },
+    timelineLineBottom: {
+      position: "absolute",
+      top: "50%",
+      bottom: 0,
+      width: 1,
+      height: 100,
+      backgroundColor: "#CBD5E1",
+    },
+    activeDot: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: Colors.palette.skyBlue,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.5,
+      shadowRadius: 5,
+      elevation: 3,
+    },
+    innerDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "#fff",
+    },
+    inactiveDot: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: "#CBD5E1",
+      backgroundColor: "transparent",
+    },
+    gradientBorderContainer: {
+      borderRadius: 24,
+      overflow: "hidden",
+      position: "relative",
+    },
+    gradientBorderInner: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4, // Thickness of the gradient border on the left
+    },
+    cardInnerContainer: {
+      paddingLeft: 2, // Small gap after the gradient border
+    },
+    cardContainer: {
+      flex: 1,
+    },
+    card: {
+      backgroundColor: "rgba(255,255,255,0.7)",
+    },
+    cardHeader: {
+      marginBottom: 8,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: isDark ? Colors.dark.text : Colors.light.text,
+      lineHeight: 24,
+    },
+    cardDesc: {
+      fontSize: 14,
+      color: "#64748B",
+      marginBottom: 16,
+      lineHeight: 20,
+      fontWeight: "400",
+    },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    timeText: {
+      fontSize: 16,
+      color: "#1e293b",
+      fontWeight: "600",
+    },
+    visitBtn: {
+      backgroundColor: "#f8fafc",
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "#f1f5f9",
+    },
+    visitText: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: "#64748B",
+      letterSpacing: 1,
+    },
+    // Image Card Styles
+    imageCard: {
+      padding: 0,
+      borderRadius: 24,
+      overflow: "hidden",
+    },
+    imageBg: {
+      width: "100%",
+      height: 240,
+      justifyContent: "flex-end",
+    },
+    imageContent: {
+      padding: 10,
+    },
+    imageTextContainer: {
+      backgroundColor: "rgba(255,255,255,0.9)",
+      borderRadius: 20,
+      padding: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 5,
+    },
+    imageTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: "#1e293b",
+    },
+    tagRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: 6,
+    },
+    tagText: {
+      fontSize: 14,
+      color: "#64748B",
+      marginLeft: 6,
+      fontWeight: "500",
+    },
+    imageDesc: {
+      fontSize: 14,
+      color: "#64748B",
+      marginBottom: 12,
+      lineHeight: 20,
+    },
+    bottomRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    timeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+  });
+
   const renderTimeline = () => (
     <View style={styles.timelineContainer}>
       {!isFirst && <View style={styles.timelineLineTop} />}
@@ -170,174 +344,3 @@ export function TaskCard({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    flexDirection: "row",
-    marginBottom: 20,
-    minHeight: 120,
-  },
-  timelineContainer: {
-    // width: 24,
-    alignItems: "center",
-    marginRight: 12,
-    justifyContent: "center",
-  },
-  timelineLineTop: {
-    position: "absolute",
-    top: 0,
-    bottom: "50%",
-    width: 1,
-    backgroundColor: "#CBD5E1",
-  },
-  timelineLineBottom: {
-    position: "absolute",
-    top: "50%",
-    bottom: 0,
-    width: 1,
-    height: 100,
-    backgroundColor: "#CBD5E1",
-  },
-  activeDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.palette.skyBlue,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  innerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#fff",
-  },
-  inactiveDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    backgroundColor: "transparent",
-  },
-  gradientBorderContainer: {
-    borderRadius: 24,
-    overflow: "hidden",
-    position: "relative",
-  },
-  gradientBorderInner: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4, // Thickness of the gradient border on the left
-  },
-  cardInnerContainer: {
-    paddingLeft: 2, // Small gap after the gradient border
-  },
-  cardContainer: {
-    flex: 1,
-  },
-  card: {
-    backgroundColor: "rgba(255,255,255,0.7)",
-  },
-  cardHeader: {
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1e293b",
-    lineHeight: 24,
-  },
-  cardDesc: {
-    fontSize: 14,
-    color: "#64748B",
-    marginBottom: 16,
-    lineHeight: 20,
-    fontWeight: "400",
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  timeText: {
-    fontSize: 16,
-    color: "#1e293b",
-    fontWeight: "600",
-  },
-  visitBtn: {
-    backgroundColor: "#f8fafc",
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-  },
-  visitText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#64748B",
-    letterSpacing: 1,
-  },
-  // Image Card Styles
-  imageCard: {
-    padding: 0,
-    borderRadius: 24,
-    overflow: "hidden",
-  },
-  imageBg: {
-    width: "100%",
-    height: 240,
-    justifyContent: "flex-end",
-  },
-  imageContent: {
-    padding: 10,
-  },
-  imageTextContainer: {
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  imageTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1e293b",
-  },
-  tagRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 6,
-  },
-  tagText: {
-    fontSize: 14,
-    color: "#64748B",
-    marginLeft: 6,
-    fontWeight: "500",
-  },
-  imageDesc: {
-    fontSize: 14,
-    color: "#64748B",
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  bottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-});

@@ -15,7 +15,8 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { getCurrentUser, UserDetail } from "@/api/auth";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/Skeleton";
-
+import * as SecureStore from "expo-secure-store";
+import { notificationService } from "@/utils/NotificationService";
 export default function Profile() {
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const router = useRouter();
@@ -33,6 +34,8 @@ export default function Profile() {
     // Navigate back to login
     await googleSignOut();
     router.replace("/login");
+    await SecureStore.deleteItemAsync("user");
+    await SecureStore.deleteItemAsync("access");
   };
   const handleGoBack = () => {
     router.back();
@@ -55,7 +58,7 @@ export default function Profile() {
       <View style={styles.content}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={28} color="#1e293b" />
+            <Ionicons name="arrow-back" size={24} color="#1e293b" />
           </TouchableOpacity>
           <Text style={styles.title}>Profile</Text>
         </View>
@@ -96,7 +99,12 @@ export default function Profile() {
 
         <View style={styles.menuContainer}>
           <GlassCard style={styles.menuItem}>
-            <TouchableOpacity style={styles.menuButton}>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() =>
+                notificationService.deleteAllScheduledNotifications()
+              }
+            >
               <View style={styles.menuRow}>
                 <Ionicons
                   name="settings-outline"
@@ -146,8 +154,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 34,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "500",
     color: "#1e293b",
     fontFamily: Platform.select({ ios: "System", android: "Roboto" }),
   },

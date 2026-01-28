@@ -1,24 +1,31 @@
 import { apiClient } from "./client";
 
+export type Frequency = 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+export type EndsRule = 'never' | 'on_date' | 'after_occurrences';
+
+export interface NthWeekday {
+  weekday: Weekday;
+  n: 1 | 2 | 3 | 4 | -1; // 1st..4th or last
+}
+
 export interface RepeatMetadata {
-  frequency: "once" | "daily" | "weekly" | "monthly" | "yearly" | "WEEKLY" | "DAILY";
-  time_of_day?: string; // "HH:mm"
-  timezone?: string;
-  start_datetime?: string; // ISO string
-  start_date?: string;
-  end_date?: string;
-  interval?: number | string;
-  weekdays?: string[]; // ["Mon", "Wed", "Fri"]
-  days?: string[];
-  days_of_week?: string[];
-  month_day?: number;
-  nth_weekday?: {
-    weekday: string;
-    n: number | "last";
-  };
-  ends?: "never" | "on_date" | "after_occurrences";
+  frequency: Frequency;
+  time_of_day: string; // "09:00" or "09:00:00" required
+  
+  // Optional / Conditional
+  interval?: number; // Default 1
+  timezone?: string; // "America/Los_Angeles"
+  weekdays?: Weekday[]; // ["mon", "wed"]
+  month_day?: number; // 1-31
+  nth_weekday?: NthWeekday;
+  
+  start_date?: string; // "YYYY-MM-DD"
+  start_datetime?: string; // ISO
+  
+  ends?: EndsRule;
+  end_date?: string; // "YYYY-MM-DD"
   occurrences?: number;
-  duration?: string;
 }
 
 export interface LinkMetadata {

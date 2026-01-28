@@ -7,28 +7,35 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+
 import { ScreenWrapper } from "@/components/ScreenWrapper";
 import { TaskCard } from "@/components/TaskCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import logo from "@/assets/adaptive-icon.png";
 import { getCurrentUser, UserDetail } from "@/api/auth";
 import { Skeleton } from "@/components/Skeleton";
-
+import { notificationService } from "@/utils/NotificationService";
 export default function DashboardScreen() {
   const router = useRouter();
   const { reminders, isLoading, fetchReminders, toggleReminder } =
     useReminderStore();
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchReminders();
+    }, [fetchReminders]),
+  );
+
   useEffect(() => {
     // Request permissions on mount
     registerForPushNotificationsAsync();
-    fetchReminders();
   }, []);
 
   useEffect(() => {
@@ -104,7 +111,10 @@ export default function DashboardScreen() {
         </View>
         <TouchableOpacity
           style={styles.avatar}
-          onPress={() => router.push("/profile")}
+          onPress={() => {
+            router.push("/profile");
+            notificationService.checkScheduled();
+          }}
         >
           {!userDetails ? (
             <Skeleton width={40} height={40} borderRadius={20} />
@@ -118,25 +128,31 @@ export default function DashboardScreen() {
           )}
         </TouchableOpacity>
       </View>
-
+      <View className="flex px-8">
+        <View style={styles.greeting}>
+          {userDetails ? (
+            <Text style={styles.greetingText}>
+              {/* Today's date in Wed, July 10 */}
+              {new Date().toLocaleDateString([], {
+                weekday: "long",
+              })}
+            </Text>
+          ) : (
+            <Skeleton width={200} height={32} borderRadius={4} />
+          )}
+          <Text style={styles.subGreeting}>
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+            })}
+          </Text>
+        </View>
+      </View>
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        <View className="flex px-4">
-          <View style={styles.greeting}>
-            {userDetails ? (
-              <Text style={styles.greetingText}>
-                Good morning, {userDetails?.first_name}
-              </Text>
-            ) : (
-              <Skeleton width={200} height={32} borderRadius={4} />
-            )}
-          </View>
-          <Text style={styles.subGreeting}>Start your day</Text>
-        </View>
-
         <View style={styles.timelineWrapper}>
           {isLoading ? (
             <View className="gap-4 px-4">
@@ -225,8 +241,8 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: 110, // Above tab bar
-    right: 20,
+    bottom: 130, // Above tab bar
+    right: 30,
     width: 56,
     height: 56,
     borderRadius: 28,
