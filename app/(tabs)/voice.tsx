@@ -1,9 +1,9 @@
-import { Mic } from 'lucide-react-native';
+import { Mic } from "lucide-react-native";
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
-} from 'expo-speech-recognition';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+} from "expo-speech-recognition";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Alert,
@@ -15,21 +15,21 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-} from 'react-native';
-import ConfettiCannon from 'react-native-confetti-cannon';
-import { apiClient } from '@/api/client';
+} from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
+import { apiClient } from "@/api/client";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const LOTUS_COLORS = [
-  '#A78BFA',
-  '#EC4899',
-  '#EF4444',
-  '#F97316',
-  '#FCD34D',
-  '#86EFAC',
-  '#60A5FA',
-  '#38BDF8',
+  "#A78BFA",
+  "#EC4899",
+  "#EF4444",
+  "#F97316",
+  "#FCD34D",
+  "#86EFAC",
+  "#60A5FA",
+  "#38BDF8",
 ];
 
 interface LotusPetalProps {
@@ -71,7 +71,7 @@ function LotusPetal({ color, rotation, isRecording, index }: LotusPetalProps) {
               useNativeDriver: true,
             }),
           ]),
-        ])
+        ]),
       ).start();
     } else {
       Animated.parallel([
@@ -95,10 +95,7 @@ function LotusPetal({ color, rotation, isRecording, index }: LotusPetalProps) {
         styles.petal,
         {
           backgroundColor: color,
-          transform: [
-            { rotate: `${rotation}deg` },
-            { scale: scaleAnim },
-          ],
+          transform: [{ rotate: `${rotation}deg` }, { scale: scaleAnim }],
           opacity: opacityAnim,
         },
       ]}
@@ -107,36 +104,38 @@ function LotusPetal({ color, rotation, isRecording, index }: LotusPetalProps) {
 }
 
 const LOADING_MESSAGES = [
-  'Working on creating your reminder...',
-  'We do not let you forget! ✨',
-  'Processing your words...',
-  'Setting up your reminder...',
-  'Almost there! 🎯',
-  'Making sure you remember...',
-  'Creating magic... ✨',
-  'Your reminder is being crafted...',
+  "Working on creating your reminder...",
+  "We do not let you forget! ✨",
+  "Processing your words...",
+  "Setting up your reminder...",
+  "Almost there! 🎯",
+  "Making sure you remember...",
+  "Creating magic... ✨",
+  "Your reminder is being crafted...",
 ];
 
 export default function VoiceInputScreen() {
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [fullTranscript, setFullTranscript] = useState('');
+  const [transcript, setTranscript] = useState("");
+  const [fullTranscript, setFullTranscript] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
   const glowAnim = useRef(new Animated.Value(0)).current;
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const createReminderRef = useRef<((text: string) => Promise<void>) | null>(null);
+  const createReminderRef = useRef<((text: string) => Promise<void>) | null>(
+    null,
+  );
 
   // Helper to get last few words for display
   const getLastFewWords = (text: string, wordCount: number = 5) => {
-    if (!text || text === 'Listening...') return text;
+    if (!text || text === "Listening...") return text;
     const words = text.trim().split(/\s+/);
     if (words.length <= wordCount) return text;
-    return '...' + words.slice(-wordCount).join(' ');
+    return "..." + words.slice(-wordCount).join(" ");
   };
 
   // Auto-stop after 5 seconds of silence
@@ -145,15 +144,19 @@ export default function VoiceInputScreen() {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
-    
+
     if (isRecording) {
       silenceTimerRef.current = setTimeout(() => {
         // Auto-stop recording after 5 seconds of no input
-        if (isRecording && fullTranscript && fullTranscript !== 'Listening...') {
+        if (
+          isRecording &&
+          fullTranscript &&
+          fullTranscript !== "Listening..."
+        ) {
           // Trigger stop recording
           setIsRecording(false);
           setIsProcessing(true);
-          
+
           // Stop speech recognition
           try {
             ExpoSpeechRecognitionModule.stop();
@@ -161,14 +164,18 @@ export default function VoiceInputScreen() {
             try {
               ExpoSpeechRecognitionModule.abort();
             } catch (abortError) {
-              console.error('Error aborting speech recognition:', abortError);
+              console.error("Error aborting speech recognition:", abortError);
             }
           }
-          
+
           setIsProcessing(false);
-          
+
           // Create reminder from transcript
-          if (fullTranscript && fullTranscript !== 'Listening...' && createReminderRef.current) {
+          if (
+            fullTranscript &&
+            fullTranscript !== "Listening..." &&
+            createReminderRef.current
+          ) {
             createReminderRef.current(fullTranscript);
           }
         }
@@ -177,18 +184,19 @@ export default function VoiceInputScreen() {
   }, [isRecording, fullTranscript]);
 
   // Use the speech recognition event hook
-  useSpeechRecognitionEvent('result', (event) => {
+  useSpeechRecognitionEvent("result", (event) => {
     if (event.results && event.results.length > 0) {
       const latestResult = event.results[event.results.length - 1];
       const text = latestResult.transcript.trim();
-      
+
       // Reset silence timer on any speech input
       resetSilenceTimer();
-      
+
       if (event.isFinal) {
         // Final result - append to existing transcript
         setFullTranscript((prev) => {
-          const newText = prev === 'Listening...' || !prev ? text : `${prev} ${text}`;
+          const newText =
+            prev === "Listening..." || !prev ? text : `${prev} ${text}`;
           setTranscript(getLastFewWords(newText));
           return newText;
         });
@@ -196,10 +204,10 @@ export default function VoiceInputScreen() {
         // Interim result - show as current text
         setFullTranscript((prev) => {
           let newText;
-          if (prev && prev !== 'Listening...' && !prev.includes(text)) {
+          if (prev && prev !== "Listening..." && !prev.includes(text)) {
             newText = `${prev} ${text}`;
           } else {
-            newText = text || prev || 'Listening...';
+            newText = text || prev || "Listening...";
           }
           setTranscript(getLastFewWords(newText));
           return newText;
@@ -208,112 +216,115 @@ export default function VoiceInputScreen() {
     }
   });
 
-  useSpeechRecognitionEvent('error', (event) => {
-    console.error('Speech recognition error:', event.error, event.message);
-    
+  useSpeechRecognitionEvent("error", (event) => {
+    console.error("Speech recognition error:", event.error, event.message);
+
     // Don't show error for aborted (user stopped manually)
-    if (event.error === 'aborted') {
+    if (event.error === "aborted") {
       return;
     }
 
     // Reset recording state on error
     setIsRecording(false);
     setIsProcessing(false);
-    
+
     // Get user-friendly error message
-    let errorMessage = 'An error occurred during speech recognition.';
-    let errorTitle = 'Recognition Error';
-    
+    let errorMessage = "An error occurred during speech recognition.";
+    let errorTitle = "Recognition Error";
+
     switch (event.error) {
-      case 'not-allowed':
-        errorTitle = 'Permission Denied';
-        errorMessage = 'Microphone access was denied. Please enable it in Settings.';
+      case "not-allowed":
+        errorTitle = "Permission Denied";
+        errorMessage =
+          "Microphone access was denied. Please enable it in Settings.";
         break;
-      case 'no-speech':
-        errorTitle = 'No Speech Detected';
-        errorMessage = 'No speech was detected. Please try speaking again.';
+      case "no-speech":
+        errorTitle = "No Speech Detected";
+        errorMessage = "No speech was detected. Please try speaking again.";
         break;
-      case 'audio-capture':
-        errorTitle = 'Audio Capture Error';
-        errorMessage = 'Unable to access microphone. Please check your device settings.';
+      case "audio-capture":
+        errorTitle = "Audio Capture Error";
+        errorMessage =
+          "Unable to access microphone. Please check your device settings.";
         break;
-      case 'network':
-        errorTitle = 'Network Error';
-        errorMessage = 'Network connection required for speech recognition. Please check your internet connection.';
+      case "network":
+        errorTitle = "Network Error";
+        errorMessage =
+          "Network connection required for speech recognition. Please check your internet connection.";
         break;
-      case 'service-not-allowed':
-        errorTitle = 'Service Unavailable';
-        errorMessage = 'Speech recognition service is not available. Please try again later.';
+      case "service-not-allowed":
+        errorTitle = "Service Unavailable";
+        errorMessage =
+          "Speech recognition service is not available. Please try again later.";
         break;
-      case 'bad-grammar':
-        errorTitle = 'Configuration Error';
-        errorMessage = 'Speech recognition configuration error. Please try again.';
+      case "bad-grammar":
+        errorTitle = "Configuration Error";
+        errorMessage =
+          "Speech recognition configuration error. Please try again.";
         break;
-      case 'language-not-supported':
-        errorTitle = 'Language Not Supported';
-        errorMessage = 'The selected language is not supported.';
+      case "language-not-supported":
+        errorTitle = "Language Not Supported";
+        errorMessage = "The selected language is not supported.";
         break;
-      case 'busy':
-        errorTitle = 'Service Busy';
-        errorMessage = 'Speech recognition service is busy. Please try again in a moment.';
+      case "busy":
+        errorTitle = "Service Busy";
+        errorMessage =
+          "Speech recognition service is busy. Please try again in a moment.";
         break;
       default:
-        errorMessage = event.message || 'An unexpected error occurred. Please try again.';
+        errorMessage =
+          event.message || "An unexpected error occurred. Please try again.";
     }
 
     // Show alert for critical errors
-    if (event.error !== 'no-speech') {
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setTranscript('');
-            },
+    if (event.error !== "no-speech") {
+      Alert.alert(errorTitle, errorMessage, [
+        {
+          text: "OK",
+          onPress: () => {
+            setTranscript("");
           },
-        ]
-      );
+        },
+      ]);
     } else {
       // For no-speech, just show a brief message
-      setTranscript('No speech detected. Try speaking again.');
+      setTranscript("No speech detected. Try speaking again.");
       setTimeout(() => {
-        setTranscript('');
+        setTranscript("");
       }, 3000);
     }
   });
 
-  useSpeechRecognitionEvent('start', () => {
-    setTranscript('Listening...');
+  useSpeechRecognitionEvent("start", () => {
+    setTranscript("Listening...");
     setIsRecording(true);
   });
 
-  useSpeechRecognitionEvent('end', () => {
+  useSpeechRecognitionEvent("end", () => {
     // Recognition ended - reset state if not already stopped
     if (isRecording) {
       setIsRecording(false);
       setIsProcessing(false);
-      
+
       // If no transcript was captured, show message
-      if (!transcript || transcript === 'Listening...') {
-        setTranscript('No speech detected');
+      if (!transcript || transcript === "Listening...") {
+        setTranscript("No speech detected");
         setTimeout(() => {
-          setTranscript('');
+          setTranscript("");
         }, 3000);
       }
     }
   });
 
-  useSpeechRecognitionEvent('nomatch', () => {
+  useSpeechRecognitionEvent("nomatch", () => {
     // No match found - this is normal, don't show error
-    console.log('No speech match found');
+    console.log("No speech match found");
     if (isRecording) {
       setIsRecording(false);
       setIsProcessing(false);
-      setTranscript('No speech detected. Try speaking again.');
+      setTranscript("No speech detected. Try speaking again.");
       setTimeout(() => {
-        setTranscript('');
+        setTranscript("");
       }, 3000);
     }
   });
@@ -332,7 +343,7 @@ export default function VoiceInputScreen() {
             duration: 1200,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     } else {
       glowAnim.setValue(0);
@@ -351,7 +362,7 @@ export default function VoiceInputScreen() {
 
   // Create reminder from text
   const createReminderFromText = useCallback(async (text: string) => {
-    if (!text || text.trim() === '' || text === 'Listening...') {
+    if (!text || text.trim() === "" || text === "Listening...") {
       return;
     }
 
@@ -359,62 +370,64 @@ export default function VoiceInputScreen() {
     setLoadingMessageIndex(0);
 
     try {
-      const response = await apiClient<{ message?: string; reminder?: any, success?: boolean }>(
-        '/reminders/from-text',
-        {
-          method: 'POST',
-          body: JSON.stringify({ text: text.trim() }),
-          useAuth: true,
-          timeout: 65000, // 60 seconds timeout to allow for longer processing
-        }
-      );
+      const response = await apiClient<{
+        message?: string;
+        reminder?: any;
+        success?: boolean;
+      }>("/reminders/from-text", {
+        method: "POST",
+        body: JSON.stringify({ text: text.trim() }),
+        useAuth: true,
+      });
 
-      console.log('response', response);
+      console.log("response", response);
 
       // check is response.success is true
       if (!response.success) {
         // show a dialog box with response.message
-        Alert.alert('Error', response.message);
+        Alert.alert("Error", response.message);
         setIsCreatingReminder(false);
         return;
       }
 
       setIsCreatingReminder(false);
-      
+
       // Show success with confetti immediately
       setShowConfetti(true);
-      setSuccessMessage('Reminder created successfully! 🎉');
+      setSuccessMessage("Reminder created successfully! 🎉");
 
       // Clear transcript after showing success
       setTimeout(() => {
-        setTranscript('');
-        setFullTranscript('');
-        setSuccessMessage('');
+        setTranscript("");
+        setFullTranscript("");
+        setSuccessMessage("");
         setShowConfetti(false);
       }, 3000);
     } catch (error: any) {
-      console.error('Error creating reminder:', error);
+      console.error("Error creating reminder:", error);
       setIsCreatingReminder(false);
-      
-      let errorMessage = 'Failed to create reminder. Please try again.';
-      let errorTitle = 'Error Creating Reminder';
-      
+
+      let errorMessage = "Failed to create reminder. Please try again.";
+      let errorTitle = "Error Creating Reminder";
+
       // Handle timeout/abort errors specifically
-      if (error?.name === 'AbortError' || error?.message?.includes('Aborted')) {
-        errorTitle = 'Request Timeout';
-        errorMessage = 'The request took too long. The server may still be processing your reminder. Please check your reminders list.';
+      if (error?.name === "AbortError" || error?.message?.includes("Aborted")) {
+        errorTitle = "Request Timeout";
+        errorMessage =
+          "The request took too long. The server may still be processing your reminder. Please check your reminders list.";
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
-      Alert.alert(
-        errorTitle,
-        errorMessage,
-        [{ text: 'OK', onPress: () => {
-          setTranscript('');
-          setFullTranscript('');
-        }}]
-      );
+
+      Alert.alert(errorTitle, errorMessage, [
+        {
+          text: "OK",
+          onPress: () => {
+            setTranscript("");
+            setFullTranscript("");
+          },
+        },
+      ]);
     }
   }, []);
 
@@ -429,53 +442,57 @@ export default function VoiceInputScreen() {
       const isAvailable = ExpoSpeechRecognitionModule.isRecognitionAvailable();
       if (!isAvailable) {
         Alert.alert(
-          'Speech Recognition Unavailable',
-          'Speech recognition is not available on this device. Please enable it in your device settings.',
-          [{ text: 'OK' }]
+          "Speech Recognition Unavailable",
+          "Speech recognition is not available on this device. Please enable it in your device settings.",
+          [{ text: "OK" }],
         );
         return;
       }
 
-      console.log('Checking permissions..');
-      
+      console.log("Checking permissions..");
+
       // Check speech recognition permissions
-      const speechPermission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      console.log('Speech permission status:', speechPermission.status);
-      
+      const speechPermission =
+        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      console.log("Speech permission status:", speechPermission.status);
+
       if (!speechPermission.granted) {
         Alert.alert(
-          'Microphone Permission Required',
-          'Please enable microphone access in your device settings to use voice recording.',
+          "Microphone Permission Required",
+          "Please enable microphone access in your device settings to use voice recording.",
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => {
-              if (Platform.OS === 'ios') {
-                Alert.alert(
-                  'Enable Microphone Access',
-                  'Go to Settings > Smran > Microphone and enable access.'
-                );
-              }
-            }},
-          ]
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                if (Platform.OS === "ios") {
+                  Alert.alert(
+                    "Enable Microphone Access",
+                    "Go to Settings > Smran > Microphone and enable access.",
+                  );
+                }
+              },
+            },
+          ],
         );
-        setTranscript('Permission denied');
-        setTimeout(() => setTranscript(''), 2000);
+        setTranscript("Permission denied");
+        setTimeout(() => setTranscript(""), 2000);
         return;
       }
 
       // Start speech recognition (this handles audio capture internally)
-      console.log('Starting speech recognition..');
+      console.log("Starting speech recognition..");
       try {
         ExpoSpeechRecognitionModule.start({
-          lang: 'en-US',
+          lang: "en-US",
           continuous: true,
           interimResults: true,
         });
 
         setIsRecording(true);
-        setFullTranscript('Listening...');
-        setTranscript('Listening...');
-        
+        setFullTranscript("Listening...");
+        setTranscript("Listening...");
+
         // Start silence timer
         resetSilenceTimer();
 
@@ -484,44 +501,43 @@ export default function VoiceInputScreen() {
           useNativeDriver: true,
         }).start();
 
-        console.log('Recording started');
+        console.log("Recording started");
       } catch (startError: any) {
-        console.error('Failed to start speech recognition:', startError);
+        console.error("Failed to start speech recognition:", startError);
         setIsRecording(false);
         Alert.alert(
-          'Failed to Start',
-          'Unable to start speech recognition. Please try again.',
-          [{ text: 'OK' }]
+          "Failed to Start",
+          "Unable to start speech recognition. Please try again.",
+          [{ text: "OK" }],
         );
-        setTranscript('');
+        setTranscript("");
       }
     } catch (err: any) {
-      console.error('Failed to start recording', err);
+      console.error("Failed to start recording", err);
       setIsRecording(false);
       setIsProcessing(false);
-      
-      const errorMessage = err?.message || 'An unexpected error occurred. Please try again.';
-      Alert.alert(
-        'Recording Error',
-        errorMessage,
-        [{ text: 'OK', onPress: () => setTranscript('') }]
-      );
+
+      const errorMessage =
+        err?.message || "An unexpected error occurred. Please try again.";
+      Alert.alert("Recording Error", errorMessage, [
+        { text: "OK", onPress: () => setTranscript("") },
+      ]);
     }
   }, [buttonScaleAnim]);
 
   const stopRecording = useCallback(async () => {
     try {
-      console.log('Stopping recording..');
-      
+      console.log("Stopping recording..");
+
       // Clear silence timer
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = null;
       }
-      
+
       setIsRecording(false);
       setIsProcessing(true);
-      
+
       Animated.spring(buttonScaleAnim, {
         toValue: 1,
         useNativeDriver: true,
@@ -531,35 +547,36 @@ export default function VoiceInputScreen() {
       try {
         ExpoSpeechRecognitionModule.stop();
       } catch (stopError: any) {
-        console.error('Error stopping speech recognition:', stopError);
+        console.error("Error stopping speech recognition:", stopError);
         // Try abort as fallback
         try {
           ExpoSpeechRecognitionModule.abort();
         } catch (abortError) {
-          console.error('Error aborting speech recognition:', abortError);
+          console.error("Error aborting speech recognition:", abortError);
         }
       }
 
       setIsProcessing(false);
-      
+
       // Check if we have valid transcript to create reminder
-      const finalTranscript = fullTranscript && fullTranscript !== 'Listening...' 
-        ? fullTranscript 
-        : '';
-      
+      const finalTranscript =
+        fullTranscript && fullTranscript !== "Listening..."
+          ? fullTranscript
+          : "";
+
       if (finalTranscript) {
         // Create reminder from transcript
         await createReminderFromText(finalTranscript);
       } else {
         // No speech detected
-        setTranscript('No speech detected');
-        setFullTranscript('');
+        setTranscript("No speech detected");
+        setFullTranscript("");
         setTimeout(() => {
-          setTranscript('');
+          setTranscript("");
         }, 3000);
       }
     } catch (err: any) {
-      console.error('Error in stopRecording:', err);
+      console.error("Error in stopRecording:", err);
       setIsRecording(false);
       setIsProcessing(false);
       setIsCreatingReminder(false);
@@ -581,8 +598,8 @@ export default function VoiceInputScreen() {
   });
 
   return (
-    <Pressable 
-      style={styles.container} 
+    <Pressable
+      style={styles.container}
       onPress={handlePress}
       disabled={isCreatingReminder}
     >
@@ -595,7 +612,16 @@ export default function VoiceInputScreen() {
           autoStart={true}
           explosionSpeed={350}
           fallSpeed={3000}
-          colors={['#A78BFA', '#EC4899', '#EF4444', '#F97316', '#FCD34D', '#86EFAC', '#60A5FA', '#38BDF8']}
+          colors={[
+            "#A78BFA",
+            "#EC4899",
+            "#EF4444",
+            "#F97316",
+            "#FCD34D",
+            "#86EFAC",
+            "#60A5FA",
+            "#38BDF8",
+          ]}
         />
       )}
 
@@ -642,13 +668,17 @@ export default function VoiceInputScreen() {
           <View style={styles.transcriptWrapper}>
             <View style={styles.transcriptHeader}>
               <Text style={styles.transcriptLabel}>
-                {isRecording ? 'Listening...' : isProcessing ? 'Processing...' : 'Transcript'}
+                {isRecording
+                  ? "Listening..."
+                  : isProcessing
+                    ? "Processing..."
+                    : "Transcript"}
               </Text>
-              {!isRecording && transcript && transcript !== 'Listening...' && (
+              {!isRecording && transcript && transcript !== "Listening..." && (
                 <Pressable
                   onPress={() => {
-                    setTranscript('');
-                    setFullTranscript('');
+                    setTranscript("");
+                    setFullTranscript("");
                   }}
                   style={styles.clearButton}
                 >
@@ -661,14 +691,12 @@ export default function VoiceInputScreen() {
               contentContainerStyle={styles.transcriptContent}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.transcript}>
-                {transcript}
-              </Text>
+              <Text style={styles.transcript}>{transcript}</Text>
             </ScrollView>
           </View>
         ) : (
           <Text style={styles.hint}>
-            {isRecording ? 'Tap to Stop' : 'Tap to Start'}
+            {isRecording ? "Tap to Stop" : "Tap to Start"}
           </Text>
         )}
       </View>
@@ -679,50 +707,50 @@ export default function VoiceInputScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
     paddingTop: 90,
     paddingHorizontal: 24,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 90,
   },
   appName: {
     fontSize: 48,
-    fontWeight: '300' as const,
-    color: '#1F2937',
+    fontWeight: "300" as const,
+    color: "#1F2937",
     letterSpacing: 4,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
     letterSpacing: 2,
-    textTransform: 'uppercase' as const,
+    textTransform: "uppercase" as const,
   },
   lotusContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative' as const,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative" as const,
   },
   petal: {
-    position: 'absolute' as const,
+    position: "absolute" as const,
     width: 140,
     height: 220,
     borderRadius: 100,
-    top: '50%',
-    left: '50%',
+    top: "50%",
+    left: "50%",
     marginLeft: -70,
     marginTop: -180,
   },
   glow: {
-    position: 'absolute' as const,
+    position: "absolute" as const,
     width: 400,
     height: 400,
     borderRadius: 200,
-    backgroundColor: '#60A5FA',
-    shadowColor: '#60A5FA',
+    backgroundColor: "#60A5FA",
+    shadowColor: "#60A5FA",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 100,
@@ -731,75 +759,75 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderColor: "rgba(0, 0, 0, 0.08)",
     zIndex: 10,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     marginBottom: 24,
   },
   micButton: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   bottomSection: {
     paddingBottom: 60,
     paddingHorizontal: 24,
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: 120,
-    justifyContent: 'center',
-    width: '100%',
+    justifyContent: "center",
+    width: "100%",
   },
   hint: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     letterSpacing: 1,
     marginBottom: 150,
   },
   transcriptWrapper: {
-    width: '100%',
+    width: "100%",
     maxWidth: width - 18,
     marginBottom: 120,
   },
   transcriptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
     paddingHorizontal: 4,
   },
   transcriptLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase' as const,
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase" as const,
     letterSpacing: 1,
   },
   clearButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
   },
   clearButtonText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#EF4444',
+    fontWeight: "600",
+    color: "#EF4444",
   },
   transcriptContainer: {
     maxHeight: 200,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
-    shadowColor: '#000',
+    borderColor: "rgba(0, 0, 0, 0.08)",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -810,37 +838,37 @@ const styles = StyleSheet.create({
   },
   transcript: {
     fontSize: 14,
-    color: '#1F2937',
+    color: "#1F2937",
     lineHeight: 20,
     letterSpacing: 0.3,
   },
   loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 40,
-    width: '100%',
+    width: "100%",
     marginBottom: 120,
   },
   loadingMessage: {
     fontSize: 18,
-    color: '#1F2937',
+    color: "#1F2937",
     marginTop: 20,
-    textAlign: 'center',
-    fontWeight: '500',
+    textAlign: "center",
+    fontWeight: "500",
     letterSpacing: 0.5,
   },
   successContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 40,
-    width: '100%',
+    width: "100%",
     marginBottom: 120,
   },
   successMessage: {
     fontSize: 24,
-    color: '#10B981',
-    textAlign: 'center',
-    fontWeight: '700',
+    color: "#10B981",
+    textAlign: "center",
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
 });

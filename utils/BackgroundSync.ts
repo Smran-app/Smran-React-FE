@@ -6,10 +6,11 @@ import {
   CATEGORY_ALARM,
   CHANNEL_ID,
 } from "./NotificationService";
-
+import { dismissSync, getReminders } from "@/api/reminders";
+import * as SecureStore from "expo-secure-store";
 export interface SyncPayload {
   type: "SYNC_COMMAND";
-  action: "DISMISS" | "SNOOZE";
+  action: "DISMISS" | "SNOOZE" | "SYNC_NEW";
   reminderId: string;
 }
 const BACKGROUND_SYNC_TASK = "BACKGROUND_SYNC_TASK";
@@ -26,9 +27,8 @@ export function registerBackgroundSyncTask() {
 
       if (data) {
         // @ts-ignore: Payload structure validation
-        const payload = JSON.parse(data.data.body).notification
-          ?.data as SyncPayload;
-        console.log("Background Sync Received:", payload);
+        const payload = JSON.parse(data.data.body) as SyncPayload;
+        // console.log("Background Sync Received:", payload);
         if (payload && payload.type === "SYNC_COMMAND") {
           console.log(
             `Background Sync Received: ${payload.action} for ${payload.reminderId}`,
@@ -36,6 +36,12 @@ export function registerBackgroundSyncTask() {
 
           if (payload.action === "DISMISS") {
             await notificationService.cancelReminder(payload.reminderId);
+          }
+          if (payload.action === "SYNC_NEW") {
+            const reminders = await getReminders();
+            reminders.forEach((reminder) => {
+              notificationService.scheduleReminder(reminder);
+            });
           }
           // If snooze, you might fetch the updated time from server or calculate locally
         }
@@ -66,9 +72,9 @@ export function setupInteractionListeners() {
       await Notifications.dismissNotificationAsync(
         response.notification.request.identifier,
       );
-
+      const device_id = await SecureStore.getItemAsync("device_id");
       // 2. Tell Backend to sync others
-      //   await apiService.syncAction(reminderId, "dismiss");
+      await dismissSync(reminderId as string, device_id as string);
     } else if (actionId.startsWith("SNOOZE_")) {
       let snoozeMinutes = 10; // Default
 

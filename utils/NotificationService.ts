@@ -136,13 +136,13 @@ class NotificationService {
   async checkScheduled() {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
 
-    console.log(`You have ${scheduled.length} notifications scheduled.`);
+    // console.log(`You have ${scheduled.length} notifications scheduled.`);
 
     scheduled.forEach((notif) => {
-      console.log("ID:", notif.identifier);
-      console.log("Body:", notif.content.body);
+      // console.log("ID:", notif.identifier);
+      // console.log("Body:", notif.content.body);
       const trigger = notif.trigger;
-      console.log("Trigger:", trigger);
+      // console.log("Trigger:", trigger);
 
       // Fix: Safely access properties on union type
       if (trigger) {

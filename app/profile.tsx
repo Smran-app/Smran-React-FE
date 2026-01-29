@@ -45,6 +45,7 @@ export default function Profile() {
     const fetchUserDetails = async () => {
       try {
         const user = await getCurrentUser();
+        console.log(user);
         setUserDetails(user);
       } catch (error) {
         console.error("Error fetching user details:", error);
@@ -101,9 +102,11 @@ export default function Profile() {
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity
               style={styles.menuButton}
-              onPress={() =>
-                notificationService.deleteAllScheduledNotifications()
-              }
+              onPress={async () => {
+                // notificationService.deleteAllScheduledNotifications();
+                const device_id = await SecureStore.getItemAsync("device_id");
+                console.log(device_id);
+              }}
             >
               <View style={styles.menuRow}>
                 <Ionicons

@@ -58,9 +58,9 @@ export default function Login() {
         provider,
         deviceToken || "unknown_device_token",
       );
-
       console.log(`${provider} Login Success:`, data);
       await SecureStore.setItemAsync("access", data.access_token);
+      await SecureStore.setItemAsync("device_id", data.device?.id || "");
       router.replace("/(tabs)");
     } catch (error) {
       console.error(`${provider} Login Error:`, error);

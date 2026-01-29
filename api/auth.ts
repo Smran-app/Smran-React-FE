@@ -5,6 +5,7 @@ export interface DeviceInfo {
   device_token: string;
   device_type: string;
   name: string;
+  id?: string;
 }
 
 export interface AuthPayload {
@@ -27,6 +28,7 @@ export interface AuthResponse {
   access_token: string;
   refresh_token?: string;
   user?: UserDetail;
+  device?: DeviceInfo;
 }
 
 export type AuthProvider = "google" | "apple";
@@ -57,10 +59,14 @@ export const loginWithBackend = async (
     device: {
       device_token: deviceToken || "unknown_device_token",
       device_type: Platform.OS,
-      name: Platform.select({ ios: "iPhone", android: "Android", default: "Unknown" }),
+      name: Platform.select({
+        ios: "iPhone",
+        android: "Android",
+        default: "Unknown",
+      }),
     },
   };
-
+  console.log(payload);
   const endpoint = provider === "google" ? "/auth/google" : "/auth/apple";
 
   return apiClient<AuthResponse>(endpoint, {
@@ -68,4 +74,3 @@ export const loginWithBackend = async (
     body: JSON.stringify(payload),
   });
 };
-

@@ -16,7 +16,7 @@ export function generateOccurrenceDates(
   limit = 20,
 ): Date[] {
   const dates: Date[] = [];
-  console.log("Generating occurrences for:", metadata);
+  // console.log("Generating occurrences for:", metadata);
   // 1. Determine Start Basis
   let current = getStartDate(metadata);
 
@@ -30,10 +30,6 @@ export function generateOccurrenceDates(
   }
   const [hour, minute] = metadata.time_of_day.split(":").map(Number);
   current.setHours(hour, minute, 0, 0);
-  console.log(
-    "Current date (IST):",
-    current.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-  );
 
   // 3. Short-circuit for "once" frequency
   if (metadata.frequency === "once") {

@@ -21,6 +21,7 @@ import logo from "@/assets/adaptive-icon.png";
 import { getCurrentUser, UserDetail } from "@/api/auth";
 import { Skeleton } from "@/components/Skeleton";
 import { notificationService } from "@/utils/NotificationService";
+import * as SecureStore from "expo-secure-store";
 export default function DashboardScreen() {
   const router = useRouter();
   const { reminders, isLoading, fetchReminders, toggleReminder } =
