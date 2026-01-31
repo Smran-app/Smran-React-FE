@@ -48,7 +48,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
 
       // 2. Fetch from API
       const res = await getReminders();
-      // console.log("Reminders response:", res);
+      console.log("Reminders response:", res.data);
       const remoteReminders = res?.data;
 
       // 3. Update Local DB

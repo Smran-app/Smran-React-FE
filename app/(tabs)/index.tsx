@@ -2,8 +2,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  ScrollView,
+  SectionList,
   Image,
   TouchableOpacity,
 } from "react-native";
@@ -14,7 +13,8 @@ import { TaskCard } from "@/components/TaskCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { groupRemindersByDate } from "@/utils/dateUtils";
 
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import logo from "@/assets/adaptive-icon.png";
@@ -22,6 +22,7 @@ import { getCurrentUser, UserDetail } from "@/api/auth";
 import { Skeleton } from "@/components/Skeleton";
 import { notificationService } from "@/utils/NotificationService";
 import * as SecureStore from "expo-secure-store";
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { reminders, isLoading, fetchReminders, toggleReminder } =
@@ -102,6 +103,8 @@ export default function DashboardScreen() {
     return `${frequency}${timeStr ? ` at ${timeStr}` : ""}`;
   };
 
+  const sections = useMemo(() => groupRemindersByDate(reminders), [reminders]);
+
   return (
     <ScreenWrapper style={styles.container}>
       {/* Header */}
@@ -129,52 +132,41 @@ export default function DashboardScreen() {
           )}
         </TouchableOpacity>
       </View>
-      <View className="flex px-8">
-        <View style={styles.greeting}>
-          {userDetails ? (
-            <Text style={styles.greetingText}>
-              {/* Today's date in Wed, July 10 */}
-              {new Date().toLocaleDateString([], {
-                weekday: "long",
-              })}
+
+      <View style={styles.content}>
+        {isLoading && reminders.length === 0 ? (
+          <View className="gap-4 px-4 mt-4">
+            <Skeleton width="100%" height={100} borderRadius={16} />
+            <Skeleton width="100%" height={100} borderRadius={16} />
+            <Skeleton width="100%" height={100} borderRadius={16} />
+          </View>
+        ) : sections.length === 0 ? (
+          <View className="flex items-center justify-center pt-20">
+            <Ionicons
+              name="notifications-off-outline"
+              size={48}
+              color="#cbd5e1"
+            />
+            <Text className="text-slate-400 mt-4 text-lg">
+              No reminders found
             </Text>
-          ) : (
-            <Skeleton width={200} height={32} borderRadius={4} />
-          )}
-          <Text style={styles.subGreeting}>
-            {new Date().toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-            })}
-          </Text>
-        </View>
-      </View>
-      <ScrollView
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
-      >
-        <View style={styles.timelineWrapper}>
-          {isLoading ? (
-            <View className="gap-4 px-4">
-              <Skeleton width="100%" height={100} borderRadius={16} />
-              <Skeleton width="100%" height={100} borderRadius={16} />
-              <Skeleton width="100%" height={100} borderRadius={16} />
-            </View>
-          ) : reminders.length === 0 ? (
-            <View className="flex items-center justify-center pt-20">
-              <Ionicons
-                name="notifications-off-outline"
-                size={48}
-                color="#cbd5e1"
-              />
-              <Text className="text-slate-400 mt-4 text-lg">
-                No reminders found
-              </Text>
-              <Text className="text-slate-300">Tap + to create one</Text>
-            </View>
-          ) : (
-            reminders?.map((item, index) => {
+            <Text className="text-slate-300">Tap + to create one</Text>
+          </View>
+        ) : (
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingBottom: 120,
+              paddingHorizontal: 10,
+            }}
+            showsVerticalScrollIndicator={false}
+            renderSectionHeader={({ section: { title } }) => (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+              </View>
+            )}
+            renderItem={({ item, index, section }) => {
               let timeString = "--:--";
               if (item.next_run_time) {
                 const nextRun = new Date(item.next_run_time);
@@ -183,7 +175,6 @@ export default function DashboardScreen() {
                   minute: "2-digit",
                 });
               } else if (item.repeat_metadata?.time_of_day) {
-                // Fallback to time_of_day if next_run_time is missing
                 try {
                   timeString = new Date(
                     `2000-01-01T${item.repeat_metadata.time_of_day}:00`,
@@ -194,14 +185,12 @@ export default function DashboardScreen() {
                 } catch (e) {}
               }
 
-              // Decide what to show as the main title and description
               const displayTitle =
                 item.name || item.link_metadata?.title || "Untitled Reminder";
               const displayDesc = formatRepeatSummary(item.repeat_metadata);
 
               return (
                 <TaskCard
-                  key={item.id}
                   title={displayTitle}
                   description={displayDesc}
                   time={timeString}
@@ -214,14 +203,14 @@ export default function DashboardScreen() {
                       : undefined
                   }
                   profileColor={Colors.palette.lavender}
-                  isLast={index === reminders.length - 1}
                   isFirst={index === 0}
+                  isLast={index === section.data.length - 1}
                 />
               );
-            })
-          )}
-        </View>
-      </ScrollView>
+            }}
+          />
+        )}
+      </View>
 
       {/* Floating Action Button */}
       <TouchableOpacity
@@ -300,8 +289,17 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     color: "#64748B",
   },
-
   timelineWrapper: {
     // paddingLeft: 10,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    backgroundColor: "transparent",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1e293b",
   },
 });

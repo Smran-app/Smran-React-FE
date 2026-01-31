@@ -76,7 +76,7 @@ export default function Login() {
       const { idToken, user } = response.data ?? {};
       if (idToken) {
         // console.log("User Data", user);
-        // console.log("Id Token", idToken);
+        console.log("Id Token", idToken);
         await handleLoginWithBackend(idToken, "google");
       }
     } catch (error) {

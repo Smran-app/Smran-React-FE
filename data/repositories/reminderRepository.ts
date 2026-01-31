@@ -25,8 +25,23 @@ export const getAllReminders = async (): Promise<LocalReminder[]> => {
 
 export const upsertReminders = async (reminders: ReminderResponse[]) => {
   const db = await getDB();
+  const incomingIds = new Set(reminders.map((r) => r.id));
+
   // Bulk upsert using transaction
   await db.withTransactionAsync(async () => {
+    // 1. Identify and delete local reminders that are 'synced' but missing from server
+    // (i.e., they were deleted on server side)
+    const existingSynced = await db.getAllAsync<{ id: string }>(
+      "SELECT id FROM reminders WHERE sync_status = 'synced'",
+    );
+
+    for (const row of existingSynced) {
+      if (!incomingIds.has(row.id)) {
+        await db.runAsync("DELETE FROM reminders WHERE id = ?", [row.id]);
+      }
+    }
+
+    // 2. Upsert incoming reminders
     for (const r of reminders) {
       await db.runAsync(
         `INSERT OR REPLACE INTO reminders (
