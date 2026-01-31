@@ -38,9 +38,9 @@ export default function Profile() {
   const handleLogout = async () => {
     // Navigate back to login
     await googleSignOut();
-    router.replace("/login");
     await SecureStore.deleteItemAsync("user");
     await SecureStore.deleteItemAsync("access");
+    router.replace("/login");
   };
   const handleGoBack = () => {
     router.back();
