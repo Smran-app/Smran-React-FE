@@ -10,11 +10,11 @@ import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/Colors";
-import { useColorScheme } from "react-native";
+import { useAppTheme } from "@/context/ThemeContext";
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
 
   return (

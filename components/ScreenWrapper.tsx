@@ -1,9 +1,10 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet, ViewProps, useColorScheme } from "react-native";
+import { StyleSheet, ViewProps } from "react-native";
 import { Colors } from "../constants/Colors";
+import { useAppTheme } from "@/context/ThemeContext";
 
 export function ScreenWrapper({ children, style, ...props }: ViewProps) {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
 
   // Background gradient: Light mode uses off-white with lavender touches, Dark mode uses deep navy

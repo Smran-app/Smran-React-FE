@@ -174,7 +174,7 @@ export default function DashboardScreen() {
               <Text className="text-slate-300">Tap + to create one</Text>
             </View>
           ) : (
-            reminders.map((item, index) => {
+            reminders?.map((item, index) => {
               let timeString = "--:--";
               if (item.next_run_time) {
                 const nextRun = new Date(item.next_run_time);

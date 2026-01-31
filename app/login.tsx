@@ -52,7 +52,7 @@ export default function Login() {
   ) => {
     try {
       const deviceToken = await registerForPushNotificationsAsync();
-      console.log("Device Token", deviceToken);
+      // console.log("Device Token", deviceToken);
       const data = await loginWithBackend(
         idToken,
         provider,
@@ -75,8 +75,8 @@ export default function Login() {
       // retrieve user data
       const { idToken, user } = response.data ?? {};
       if (idToken) {
-        console.log("User Data", user);
-        console.log("Id Token", idToken);
+        // console.log("User Data", user);
+        // console.log("Id Token", idToken);
         await handleLoginWithBackend(idToken, "google");
       }
     } catch (error) {
@@ -92,7 +92,7 @@ export default function Login() {
         ],
       });
       // signed in
-      console.log(credential);
+      // console.log(credential);
       if (credential.identityToken) {
         await handleLoginWithBackend(credential.identityToken, "apple");
       }

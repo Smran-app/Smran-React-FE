@@ -67,7 +67,8 @@
           "microphonePermission": "Allow Smran to access your microphone to record voice reminders.",
           "speechRecognitionPermission": "Allow Smran to use speech recognition to convert your voice into text."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "extra": {
       "router": {},

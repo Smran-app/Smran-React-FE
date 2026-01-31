@@ -38,7 +38,8 @@ export function registerBackgroundSyncTask() {
             await notificationService.cancelReminder(payload.reminderId);
           }
           if (payload.action === "SYNC_NEW") {
-            const reminders = await getReminders();
+            const res = await getReminders();
+            const reminders = res?.data;
             reminders.forEach((reminder) => {
               notificationService.scheduleReminder(reminder);
             });

@@ -104,7 +104,7 @@ class NotificationService {
           channelId: CHANNEL_ID,
         },
       });
-      console.log(`Scheduled reminder: ${reminder.name} (${instanceId})`);
+      // console.log(`Scheduled reminder: ${reminder.name} (${instanceId})`);
     }
   }
 
@@ -164,7 +164,7 @@ class NotificationService {
       console.error("Error clearing notifications:", error);
     }
   }
-  // Helper to parse your complex metadata into Expo triggers
+  // Helper to parse your comprlex metadata into Expo triggers
   private parseTrigger(
     reminder: ReminderResponse,
   ): Notifications.NotificationTriggerInput {

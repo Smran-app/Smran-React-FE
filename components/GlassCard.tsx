@@ -1,12 +1,7 @@
 import { BlurView } from "expo-blur";
-import {
-  StyleSheet,
-  View,
-  ViewProps,
-  useColorScheme,
-  Platform,
-} from "react-native";
+import { StyleSheet, View, ViewProps, Platform } from "react-native";
 import { Colors } from "../constants/Colors";
+import { useAppTheme } from "@/context/ThemeContext";
 
 interface GlassCardProps extends ViewProps {
   intensity?: number;
@@ -18,7 +13,7 @@ export function GlassCard({
   intensity = 80,
   ...props
 }: GlassCardProps) {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
 
   return (

@@ -17,9 +17,14 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/Skeleton";
 import * as SecureStore from "expo-secure-store";
 import { notificationService } from "@/utils/NotificationService";
+import { useAppTheme } from "@/context/ThemeContext";
+import { Modal } from "react-native";
 export default function Profile() {
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
+  const { theme, setTheme, colorScheme } = useAppTheme();
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const router = useRouter();
+  const isDark = colorScheme === "dark";
 
   const googleSignOut = async () => {
     try {
@@ -59,9 +64,20 @@ export default function Profile() {
       <View style={styles.content}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#1e293b" />
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={isDark ? Colors.dark.text : "#1e293b"}
+            />
           </TouchableOpacity>
-          <Text style={styles.title}>Profile</Text>
+          <Text
+            style={[
+              styles.title,
+              { color: isDark ? Colors.dark.text : "#1e293b" },
+            ]}
+          >
+            Profile
+          </Text>
         </View>
 
         <View style={styles.profileSection}>
@@ -77,7 +93,12 @@ export default function Profile() {
           </View>
           <View style={styles.userName}>
             {userDetails ? (
-              <Text style={styles.userNameText}>
+              <Text
+                style={[
+                  styles.userNameText,
+                  { color: isDark ? Colors.dark.text : "#1e293b" },
+                ]}
+              >
                 {userDetails?.first_name + " " + userDetails?.last_name}
               </Text>
             ) : (
@@ -102,6 +123,34 @@ export default function Profile() {
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity
               style={styles.menuButton}
+              onPress={() => setShowThemeModal(true)}
+            >
+              <View style={styles.menuRow}>
+                <Ionicons
+                  name="color-palette-outline"
+                  size={24}
+                  color={isDark ? Colors.dark.text : Colors.light.text}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: isDark ? Colors.dark.text : "#1e293b" },
+                  ]}
+                >
+                  Appearance ({theme.charAt(0).toUpperCase() + theme.slice(1)})
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={isDark ? Colors.dark.text : Colors.light.text}
+              />
+            </TouchableOpacity>
+          </GlassCard>
+
+          <GlassCard style={styles.menuItem}>
+            <TouchableOpacity
+              style={styles.menuButton}
               onPress={async () => {
                 // notificationService.deleteAllScheduledNotifications();
                 const device_id = await SecureStore.getItemAsync("device_id");
@@ -112,14 +161,21 @@ export default function Profile() {
                 <Ionicons
                   name="settings-outline"
                   size={24}
-                  color={Colors.light.text}
+                  color={isDark ? Colors.dark.text : Colors.light.text}
                 />
-                <Text style={styles.menuText}>Settings</Text>
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: isDark ? Colors.dark.text : "#1e293b" },
+                  ]}
+                >
+                  Settings
+                </Text>
               </View>
               <Ionicons
                 name="chevron-forward"
                 size={24}
-                color={Colors.light.text}
+                color={isDark ? Colors.dark.text : Colors.light.text}
               />
             </TouchableOpacity>
           </GlassCard>
@@ -135,6 +191,57 @@ export default function Profile() {
             </TouchableOpacity>
           </GlassCard>
         </View>
+
+        <Modal
+          visible={showThemeModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowThemeModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowThemeModal(false)}
+          >
+            <GlassCard style={styles.modalContent}>
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: isDark ? Colors.dark.text : "#1e293b" },
+                ]}
+              >
+                Select Theme
+              </Text>
+              {(["system", "light", "dark"] as const).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  style={styles.themeOption}
+                  onPress={() => {
+                    setTheme(mode);
+                    setShowThemeModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.themeOptionText,
+                      { color: isDark ? Colors.dark.text : "#1e293b" },
+                      theme === mode && styles.themeOptionActive,
+                    ]}
+                  >
+                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </Text>
+                  {theme === mode && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={Colors.light.tint}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </GlassCard>
+          </TouchableOpacity>
+        </Modal>
       </View>
     </ScreenWrapper>
   );
@@ -210,6 +317,33 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1e293b",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 20,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 20,
+  },
+  themeOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  themeOptionText: {
+    fontSize: 16,
+  },
+  themeOptionActive: {
+    color: Colors.light.tint,
+    fontWeight: "600",
   },
 });

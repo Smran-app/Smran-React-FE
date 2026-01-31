@@ -13,6 +13,7 @@ import { GlassCard } from "./GlassCard";
 import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAppTheme } from "@/context/ThemeContext";
 
 interface TaskCardProps {
   title: string;
@@ -39,7 +40,7 @@ export function TaskCard({
   isLast,
   isFirst,
 }: TaskCardProps) {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
   const styles = StyleSheet.create({
     wrapper: {

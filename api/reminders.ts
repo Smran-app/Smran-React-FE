@@ -50,8 +50,10 @@ export interface CreateReminderPayload {
   repeat_metadata: RepeatMetadata;
 }
 
-export const getReminders = async (): Promise<ReminderResponse[]> => {
-  return apiClient<ReminderResponse[]>("/reminders/", { useAuth: true });
+export const getReminders = async (): Promise<{ data: ReminderResponse[] }> => {
+  return apiClient<{ data: ReminderResponse[] }>("/reminders/", {
+    useAuth: true,
+  });
 };
 
 export const createReminder = async (
