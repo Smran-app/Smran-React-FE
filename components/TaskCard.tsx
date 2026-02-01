@@ -11,13 +11,19 @@ import {
 } from "react-native";
 import { GlassCard } from "./GlassCard";
 import { Colors } from "@/constants/Colors";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Feather,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAppTheme } from "@/context/ThemeContext";
 
 interface TaskCardProps {
   title: string;
   description?: string;
+  frequency?: string;
   time: string;
   isOn: boolean;
   onToggle: (val: boolean) => void;
@@ -31,6 +37,7 @@ interface TaskCardProps {
 export function TaskCard({
   title,
   description,
+  frequency,
   time,
   isOn,
   onToggle,
@@ -46,7 +53,16 @@ export function TaskCard({
     wrapper: {
       flexDirection: "row",
       marginBottom: 20,
+      marginHorizontal: 16,
       minHeight: 120,
+    },
+    localFlex: {
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginLeft: 2,
+      marginBottom: 8,
     },
     timelineContainer: {
       // width: 24,
@@ -96,7 +112,7 @@ export function TaskCard({
       backgroundColor: "transparent",
     },
     gradientBorderContainer: {
-      borderRadius: 24,
+      borderRadius: 10,
       overflow: "hidden",
       position: "relative",
     },
@@ -253,7 +269,7 @@ export function TaskCard({
   if (image) {
     return (
       <View style={styles.wrapper}>
-        {renderTimeline()}
+        {/* {renderTimeline()} */}
         <View style={styles.cardContainer}>
           <GradientBorder>
             <GlassCard style={styles.imageCard} intensity={20}>
@@ -308,7 +324,7 @@ export function TaskCard({
 
   return (
     <View style={styles.wrapper}>
-      {renderTimeline()}
+      {/* {renderTimeline()} */}
       <View style={styles.cardContainer}>
         <GradientBorder>
           <GlassCard style={styles.card}>
@@ -317,14 +333,38 @@ export function TaskCard({
                 {title}
               </Text>
             </View>
-            {description && (
+            {/* {description && (
               <Text style={styles.cardDesc} numberOfLines={3}>
                 {description}
               </Text>
+            )} */}
+            {frequency && (
+              <View style={styles.localFlex}>
+                <Text
+                  className="text-lg font-normal text-gray-500"
+                  numberOfLines={1}
+                >
+                  {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
+                </Text>
+                {frequency === "daily" ? (
+                  <Feather name="repeat" size={16} color="green" />
+                ) : frequency === "once" ? (
+                  <MaterialCommunityIcons
+                    name="calendar-multiselect"
+                    size={18}
+                    color={Colors.palette.primaryGradient[0]}
+                  />
+                ) : null}
+              </View>
             )}
 
             <View style={styles.footer}>
-              <Text style={styles.timeText}>{time}</Text>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
+              >
+                <MaterialIcons name="access-alarm" size={18} color="#475569" />
+                <Text style={styles.timeText}>{time}</Text>
+              </View>
 
               {hasLink ? (
                 <TouchableOpacity style={styles.visitBtn}>

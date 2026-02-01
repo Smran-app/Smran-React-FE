@@ -19,13 +19,14 @@ import * as SecureStore from "expo-secure-store";
 import { notificationService } from "@/utils/NotificationService";
 import { useAppTheme } from "@/context/ThemeContext";
 import { Modal } from "react-native";
+import { useReminderStore } from "@/store/reminderStore";
 export default function Profile() {
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const { theme, setTheme, colorScheme } = useAppTheme();
   const [showThemeModal, setShowThemeModal] = useState(false);
   const router = useRouter();
   const isDark = colorScheme === "dark";
-
+  const { clearReminders } = useReminderStore();
   const googleSignOut = async () => {
     try {
       // initiates sign out process
@@ -40,6 +41,8 @@ export default function Profile() {
     await googleSignOut();
     await SecureStore.deleteItemAsync("user");
     await SecureStore.deleteItemAsync("access");
+    // flush local db
+    await clearReminders();
     router.replace("/login");
   };
   const handleGoBack = () => {
@@ -50,7 +53,6 @@ export default function Profile() {
     const fetchUserDetails = async () => {
       try {
         const user = await getCurrentUser();
-        console.log(user);
         setUserDetails(user);
       } catch (error) {
         console.error("Error fetching user details:", error);
@@ -154,7 +156,7 @@ export default function Profile() {
               onPress={async () => {
                 // notificationService.deleteAllScheduledNotifications();
                 const device_id = await SecureStore.getItemAsync("device_id");
-                console.log(device_id);
+                // console.log(device_id);
               }}
             >
               <View style={styles.menuRow}>

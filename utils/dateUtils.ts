@@ -2,15 +2,19 @@ import { Reminder } from "@/store/reminderStore";
 
 export interface ReminderSection {
   title: string;
+  dateString: string;
   data: Reminder[];
 }
 
 export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
   if (!reminders || reminders.length === 0) return [];
-
+  //   console.log("reminders", reminders);
   // Helper to get normalized date string (YYYY-MM-DD)
   const getDateKey = (dateObj: Date) => {
-    return dateObj.toISOString().split("T")[0];
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   // Helper to parse reminder time
@@ -31,20 +35,24 @@ export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
   };
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  //   today.setHours(0, 0, 0, 0);
 
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+  //   console.log("today", today);
+  //   console.log("tomorrow", tomorrow);
 
   const sectionsMap = new Map<string, Reminder[]>();
 
   reminders.forEach((r) => {
     const rDate = getReminderDate(r);
+    // console.log("rDate for reminder", r.name, " : ", rDate);
     if (!rDate) return;
 
     // Check if it's in the past (before today)
     const checkDate = new Date(rDate);
-    checkDate.setHours(0, 0, 0, 0);
+    // console.log("checkDate for reminder", r.name, " : ", checkDate);
+    // checkDate.setHours(0, 0, 0, 0);
 
     if (checkDate < today) {
       // Option: Add to "Overdue" or ignore. User said "starting from today".
@@ -55,11 +63,11 @@ export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
       // Interpretation: "Day wise, starting from today" -> exclude yesterday.
       // But if I missed a task yesterday, I probably want to see it.
       // I will perform a soft check: if it is overdue and status is active, show in "Overdue".
-      if (r.status === "active") {
-        const key = "Overdue";
-        if (!sectionsMap.has(key)) sectionsMap.set(key, []);
-        sectionsMap.get(key)?.push(r);
-      }
+      //   if (r.status === "active") {
+      //     const key = "Overdue";
+      //     if (!sectionsMap.has(key)) sectionsMap.set(key, []);
+      //     sectionsMap.get(key)?.push(r);
+      //   }
       return;
     }
 
@@ -76,25 +84,28 @@ export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
   const sections: ReminderSection[] = [];
 
   // Special handling for Overdue
-  if (sectionsMap.has("Overdue")) {
-    sections.push({
-      title: "Overdue",
-      data: sectionsMap.get("Overdue")!.sort(compareTime),
-    });
-  }
+  //   if (sectionsMap.has("Overdue")) {
+  //     sections.push({
+  //       title: "Overdue",
+  //       data: sectionsMap.get("Overdue")!.sort(compareTime),
+  //     });
+  //   }
 
   sortedKeys.forEach((key) => {
     if (key === "Overdue") return; // Handled above
 
     const date = new Date(key);
     let title = "";
+    let dateString = "";
 
     if (key === getDateKey(today)) {
-      title = `Today • ${today.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
+      title = "Today";
+      dateString = `${today.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
     } else if (key === getDateKey(tomorrow)) {
-      title = `Tomorrow • ${tomorrow.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
+      title = "Tomorrow";
+      dateString = `${tomorrow.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
     } else {
-      title = date.toLocaleDateString("en-US", {
+      dateString = date.toLocaleDateString("en-US", {
         weekday: "long",
         month: "short",
         day: "numeric",
@@ -104,6 +115,7 @@ export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
     const tasks = sectionsMap.get(key) || [];
     sections.push({
       title,
+      dateString,
       data: tasks.sort(compareTime),
     });
   });

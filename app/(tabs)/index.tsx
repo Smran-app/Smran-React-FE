@@ -25,14 +25,14 @@ import * as SecureStore from "expo-secure-store";
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { reminders, isLoading, fetchReminders, toggleReminder } =
+  const { reminders, isLoading, fetchHomeReminders, toggleReminder } =
     useReminderStore();
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      fetchReminders();
-    }, [fetchReminders]),
+      fetchHomeReminders();
+    }, [fetchHomeReminders]),
   );
 
   useEffect(() => {
@@ -157,13 +157,24 @@ export default function DashboardScreen() {
             sections={sections}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
-              paddingBottom: 120,
-              paddingHorizontal: 10,
+              paddingBottom: 160,
+              // paddingHorizontal: 10,
             }}
             showsVerticalScrollIndicator={false}
-            renderSectionHeader={({ section: { title } }) => (
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{title}</Text>
+            renderSectionHeader={({ section }) => (
+              <View
+                style={styles.sectionHeader}
+                className={`${section === sections[0] ? "border-t-0" : "border-t-[0.5px] border-t-[#cbd5e1]"}`}
+              >
+                {section.title && (
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                )}
+                <Text
+                  style={styles.sectionDate}
+                  className={`${section.title === "" ? "py-3" : ""}`}
+                >
+                  {section.dateString}
+                </Text>
               </View>
             )}
             renderItem={({ item, index, section }) => {
@@ -188,10 +199,10 @@ export default function DashboardScreen() {
               const displayTitle =
                 item.name || item.link_metadata?.title || "Untitled Reminder";
               const displayDesc = formatRepeatSummary(item.repeat_metadata);
-
               return (
                 <TaskCard
                   title={displayTitle}
+                  frequency={item.repeat_metadata.frequency}
                   description={displayDesc}
                   time={timeString}
                   isOn={item.status === "active"}
@@ -250,7 +261,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    marginBottom: 20,
+    // marginBottom: 10,
   },
   flowerIcon: {
     shadowColor: Colors.palette.skyBlue,
@@ -273,7 +284,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 10,
+    // paddingHorizontal: 10,
   },
   greeting: {
     marginBottom: 5,
@@ -293,13 +304,21 @@ const styles = StyleSheet.create({
     // paddingLeft: 10,
   },
   sectionHeader: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
     backgroundColor: "transparent",
+    // borderBottomWidth: 0.5,
+    // borderBottomColor: "#00000010",
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 25,
     fontWeight: "700",
+    color: "#1e293b",
+  },
+  sectionDate: {
+    fontSize: 16,
+    fontWeight: "500",
     color: "#1e293b",
   },
 });

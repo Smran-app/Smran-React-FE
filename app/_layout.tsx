@@ -32,6 +32,8 @@ function RootLayoutContent() {
           contentStyle: { backgroundColor: "transparent" },
         }}
       >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
           name="onboarding"
           options={{ headerShown: false, animation: "fade" }}
@@ -40,8 +42,6 @@ function RootLayoutContent() {
           name="login"
           options={{ headerShown: false, animation: "fade" }}
         />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: "transparentModal", animation: "fade" }}

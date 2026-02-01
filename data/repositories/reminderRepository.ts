@@ -23,7 +23,10 @@ export const getAllReminders = async (): Promise<LocalReminder[]> => {
   }));
 };
 
-export const upsertReminders = async (reminders: ReminderResponse[]) => {
+export const upsertReminders = async (
+  reminders: ReminderResponse[],
+  isPartial: boolean = false,
+) => {
   const db = await getDB();
   const incomingIds = new Set(reminders.map((r) => r.id));
 
@@ -31,13 +34,16 @@ export const upsertReminders = async (reminders: ReminderResponse[]) => {
   await db.withTransactionAsync(async () => {
     // 1. Identify and delete local reminders that are 'synced' but missing from server
     // (i.e., they were deleted on server side)
-    const existingSynced = await db.getAllAsync<{ id: string }>(
-      "SELECT id FROM reminders WHERE sync_status = 'synced'",
-    );
+    // ONLY if this is a full sync (!isPartial).
+    if (!isPartial) {
+      const existingSynced = await db.getAllAsync<{ id: string }>(
+        "SELECT id FROM reminders WHERE sync_status = 'synced'",
+      );
 
-    for (const row of existingSynced) {
-      if (!incomingIds.has(row.id)) {
-        await db.runAsync("DELETE FROM reminders WHERE id = ?", [row.id]);
+      for (const row of existingSynced) {
+        if (!incomingIds.has(row.id)) {
+          await db.runAsync("DELETE FROM reminders WHERE id = ?", [row.id]);
+        }
       }
     }
 
@@ -99,4 +105,9 @@ export const updateLocalReminderStatus = async (
 export const deleteLocalReminder = async (id: string) => {
   const db = await getDB();
   await db.runAsync("DELETE FROM reminders WHERE id = ?", [id]);
+};
+
+export const clearReminders = async () => {
+  const db = await getDB();
+  await db.runAsync("DELETE FROM reminders");
 };

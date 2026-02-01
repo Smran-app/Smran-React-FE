@@ -15,6 +15,7 @@ import {
   updateLocalReminderStatus,
   deleteLocalReminder,
   LocalReminder,
+  clearReminders,
 } from "@/data/repositories/reminderRepository";
 
 export interface Reminder extends ReminderResponse {
@@ -25,13 +26,15 @@ interface ReminderState {
   reminders: Reminder[];
   isLoading: boolean;
   error: string | null;
-  fetchReminders: () => Promise<void>;
+  fetchHomeReminders: () => Promise<void>;
+  fetchAllReminders: () => Promise<void>;
   addReminder: (payload: CreateReminderPayload) => Promise<void>;
   toggleReminder: (
     id: string,
     currentStatus: "active" | "paused",
   ) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
+  clearReminders: () => Promise<void>;
 }
 
 export const useReminderStore = create<ReminderState>((set, get) => ({
@@ -39,41 +42,60 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchReminders: async () => {
+  // Fetch Today & Tomorrow (for Home Screen)
+  fetchHomeReminders: async () => {
     set({ isLoading: true, error: null });
     try {
-      // 1. Load from Local DB (Instant)
+      // 1. Initial Local Load
       const localReminders = await getAllReminders();
-      set({ reminders: localReminders, isLoading: false }); // Show local data immediately
+      set({ reminders: localReminders, isLoading: false });
 
-      // 2. Fetch from API
-      const res = await getReminders();
-      console.log("Reminders response:", res.data);
-      const remoteReminders = res?.data;
+      const remoteReminders = await getReminders();
 
-      // 3. Update Local DB
-      await upsertReminders(remoteReminders);
+      // 3. Upsert with isPartial=true
+      await upsertReminders(remoteReminders.data);
 
-      // 4. Update State with latest data (and potential sync merges if we had logic for that)
+      // 4. Update State
       const updatedLocalReminders = await getAllReminders();
       set({ reminders: updatedLocalReminders, isLoading: false });
 
-      // 5. Schedule Notifications (idempotent-ish)
+      // 5. Schedule (simplified: re-schedule all or just new ones.
+      //    For efficiency, maybe just schedule incoming ones, but safe to re-run all generally)
       for (const r of updatedLocalReminders) {
         try {
           await notificationService.scheduleReminder(r);
-        } catch (innerError) {
-          console.error(`Failed to schedule reminder ${r.id}:`, innerError);
-        }
+        } catch (ignored) {}
       }
     } catch (err: any) {
-      console.error("Fetch reminders error", err);
-      // If API fails, we still have local reminders in state from step 1
+      console.error("Fetch home reminders error", err);
       set({
-        // Don't clear reminders if we have them
         error: err.message || "Failed to sync reminders",
         isLoading: false,
       });
+    }
+  },
+
+  // Full Sync (for Manage Screen)
+  fetchAllReminders: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await getReminders();
+      // Full sync upsert (isPartial = false)
+      await upsertReminders(res.data, false);
+
+      const all = await getAllReminders();
+      set({ reminders: all, isLoading: false });
+
+      for (const r of all) {
+        try {
+          await notificationService.scheduleReminder(r);
+        } catch (ignored) {}
+      }
+    } catch (err: any) {
+      console.error("Fetch all reminders error", err);
+      // Fallback local load
+      const all = await getAllReminders();
+      set({ reminders: all, isLoading: false, error: err.message });
     }
   },
 
@@ -173,5 +195,9 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         await addLocalReminder(restored);
       }
     }
+  },
+  clearReminders: async () => {
+    set({ reminders: [], isLoading: false, error: null });
+    await clearReminders();
   },
 }));
