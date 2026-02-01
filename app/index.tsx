@@ -32,9 +32,12 @@ export default function Index() {
       ReceiveSharingIntent.clearReceivedFiles();
     };
   }, []);
+
   if (hasToken === null) {
+    console.log("No token found");
     return null; // Or a splash screen/loading indicator
   }
+  console.log("Token found");
 
   return <Redirect href={hasToken ? "/(tabs)" : "/onboarding"} />;
 }
