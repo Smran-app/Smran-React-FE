@@ -14,7 +14,7 @@ import {
   LayoutAnimation,
 } from "react-native";
 import { useState, useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useReminderStore } from "@/store/reminderStore";
 import {
   Calendar,
@@ -39,7 +39,9 @@ type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export default function ModalScreen() {
   const router = useRouter();
-  const { addReminder, isLoading } = useReminderStore();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { addReminder, updateReminder, reminders, isLoading } =
+    useReminderStore();
 
   const [name, setName] = useState("");
   const [link, setLink] = useState("");
@@ -81,7 +83,35 @@ export default function ModalScreen() {
     const d = new Date();
     d.setHours(d.getHours() + 1, 0, 0, 0);
     setTime(d);
-  }, []);
+
+    if (id) {
+      const reminder = reminders.find((r) => r.id === id);
+      if (reminder) {
+        setName(reminder.name);
+        setLink(reminder.link || "");
+
+        const meta = reminder.repeat_metadata;
+        setRepeatType(meta.frequency);
+
+        if (meta.time_of_day) {
+          const [hours, mins] = meta.time_of_day.split(":").map(Number);
+          const t = new Date();
+          t.setHours(hours, mins, 0, 0);
+          setTime(t);
+        }
+
+        if (meta.start_date) setStartDate(new Date(meta.start_date));
+        if (meta.start_datetime) setStartDate(new Date(meta.start_datetime));
+
+        if (meta.interval) setInterval(meta.interval.toString());
+        if (meta.weekdays) setSelectedWeekdays(meta.weekdays);
+
+        if (meta.ends) setEndsType(meta.ends);
+        if (meta.end_date) setEndDate(new Date(meta.end_date));
+        if (meta.occurrences) setOccurrences(meta.occurrences.toString());
+      }
+    }
+  }, [id, reminders]); // Added dependencies
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -126,15 +156,24 @@ export default function ModalScreen() {
     }
 
     try {
-      await addReminder({
+      const payload = {
         user_id: userDetails?.id || null,
         name,
         link: link.trim() || null,
         repeat_metadata,
-      });
+      };
+
+      if (id) {
+        await updateReminder(id, payload);
+      } else {
+        await addReminder(payload);
+      }
       router.back();
     } catch (err) {
-      Alert.alert("Error", "Couldn't create reminder. Try again.");
+      Alert.alert(
+        "Error",
+        `Couldn't ${id ? "update" : "create"} reminder. Try again.`,
+      );
     }
   };
 
@@ -490,7 +529,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
-    maxHeight: "85%",
+    // maxHeight: "100%",
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.5)",

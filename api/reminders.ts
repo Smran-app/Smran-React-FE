@@ -37,7 +37,7 @@ export interface ReminderResponse {
   id: string;
   name: string;
   link?: string | null;
-  status: "active" | "paused";
+  status: "active" | "inactive";
   repeat_metadata: RepeatMetadata;
   next_run_time: string | null; // ISO string with offset
   link_metadata?: LinkMetadata | null;
@@ -71,11 +71,22 @@ export const createReminder = async (
 
 export const updateReminderStatus = async (
   id: string,
-  status: "active" | "paused",
+  status: "active" | "inactive",
 ): Promise<ReminderResponse> => {
   return apiClient<ReminderResponse>(`/reminders/${id}`, {
     method: "PUT",
     body: JSON.stringify({ status }),
+    useAuth: true,
+  });
+};
+
+export const updateReminder = async (
+  id: string,
+  payload: Partial<CreateReminderPayload>,
+): Promise<ReminderResponse> => {
+  return apiClient<ReminderResponse>(`/reminders/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
     useAuth: true,
   });
 };

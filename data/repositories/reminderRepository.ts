@@ -93,7 +93,7 @@ export const addLocalReminder = async (reminder: ReminderResponse) => {
 
 export const updateLocalReminderStatus = async (
   id: string,
-  status: "active" | "paused",
+  status: "active" | "inactive",
 ) => {
   const db = await getDB();
   await db.runAsync(

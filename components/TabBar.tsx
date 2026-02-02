@@ -1,43 +1,36 @@
-import {
-  View,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-} from "react-native";
-import { useTheme } from "@react-navigation/native";
+import { View, TouchableOpacity, Text } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../constants/Colors";
 import { useAppTheme } from "@/context/ThemeContext";
+import { Colors } from "../constants/Colors";
 
 export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const { colors } = useTheme();
   const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
 
   return (
-    <View style={styles.containerWrapper}>
-      <View
-        style={[
-          styles.container,
-          {
+    <View
+      className="absolute bottom-8 left-0 right-0 items-center "
+      pointerEvents="box-none"
+    >
+      <View className="shadow-xl drop-shadow-lg shadow-black/60">
+        <View
+          className={`overflow-hidden rounded-full drop-shadow-lg border w-[280px] `}
+          style={{
             backgroundColor: isDark
               ? "rgba(15, 23, 42, 0.8)"
               : "rgba(255, 255, 255, 0.8)",
             borderColor: isDark
               ? Colors.dark.glassBorder
               : Colors.light.glassBorder,
-          },
-        ]}
-      >
-        <BlurView
-          intensity={80}
-          tint={isDark ? "dark" : "light"}
-          style={styles.blur}
+          }}
         >
-          <View style={styles.content}>
+          <BlurView
+            intensity={80}
+            tint={isDark ? "dark" : "light"}
+            className="flex-row items-center justify-between p-1"
+          >
             {state.routes.map((route, index) => {
               const { options } = descriptors[route.key];
               const isFocused = state.index === index;
@@ -55,10 +48,9 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               };
 
               let iconName: any = "square";
-              // Matching icons to "New", "Voice Input", "Manage"
-              if (route.name === "index") iconName = "notifications"; // "New"
-              if (route.name === "voice") iconName = "mic"; // "Voice Input"
-              if (route.name === "manage") iconName = "list"; // "Manage"
+              if (route.name === "index") iconName = "notifications";
+              if (route.name === "voice") iconName = "mic";
+              if (route.name === "manage") iconName = "list";
 
               const label =
                 options.tabBarLabel !== undefined
@@ -67,6 +59,25 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                     ? options.title
                     : route.name;
 
+              // Active Background Color
+              const activeBg = isDark ? "#bef264" : Colors.light.tint;
+
+              const activeBackgroundColor = isFocused
+                ? isDark
+                  ? Colors.palette.mint // Green-ish for dark mode to match the "Activity Ring" vibe? Or just tint?
+                  : Colors.light.tint
+                : "transparent";
+
+              const activePillColor = isDark
+                ? Colors.palette.mint
+                : Colors.light.tint;
+              const activeIconColor = isDark ? "#000000" : "#FFFFFF"; // Contrast text on colored pill
+              const inactiveIconColor = isDark ? "#9ca3af" : "#64748b";
+              const activeTextColor = isDark ? "text-black" : "text-white";
+              const inactiveTextColor = isDark
+                ? "text-gray-400"
+                : "text-slate-500";
+
               return (
                 <TouchableOpacity
                   key={route.key}
@@ -74,100 +85,33 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   accessibilityState={isFocused ? { selected: true } : {}}
                   accessibilityLabel={options.tabBarAccessibilityLabel}
                   onPress={onPress}
-                  style={styles.tabItem}
+                  className={`flex-1 items-center justify-center py-3 rounded-full`}
+                  style={{
+                    backgroundColor: isFocused
+                      ? activePillColor
+                      : "transparent",
+                  }}
                 >
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      (route.name === "voice" || isFocused) &&
-                        styles.activeIconContainer,
-                      route.name === "voice" && styles.voiceTab,
-                    ]}
-                  >
+                  <View className="items-center justify-center">
                     <Ionicons
                       name={iconName}
-                      size={24}
-                      color={
-                        route.name === "voice"
-                          ? "#fff"
-                          : isFocused
-                            ? Colors.light.tint
-                            : colors.text
-                      }
+                      size={22}
+                      color={isFocused ? activeIconColor : inactiveIconColor}
                     />
+                    <Text
+                      className={`text-[10px] font-medium mt-0.5 ${
+                        isFocused ? activeTextColor : inactiveTextColor
+                      }`}
+                    >
+                      {label as string}
+                    </Text>
                   </View>
-                  <Text
-                    style={{
-                      color: isFocused ? Colors.light.tint : colors.text,
-                      fontSize: 12,
-                      marginTop: 4,
-                      fontFamily: Platform.select({
-                        ios: "System",
-                        android: "Roboto",
-                      }),
-                      fontWeight: isFocused ? "600" : "400",
-                    }}
-                  >
-                    {label as string}
-                  </Text>
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </BlurView>
+          </BlurView>
+        </View>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  containerWrapper: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-  },
-  container: {
-    borderRadius: 30,
-    overflow: "hidden",
-    width: "100%",
-    borderWidth: 1,
-    // Shadow
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  blur: {
-    width: "100%",
-  },
-  content: {
-    flexDirection: "row",
-    paddingVertical: 15,
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  tabItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-  },
-  iconContainer: {
-    padding: 8,
-    borderRadius: 20,
-  },
-  activeIconContainer: {
-    // Optional active background
-  },
-  voiceTab: {
-    backgroundColor: Colors.light.tint, // Prominent Blue
-    borderRadius: 25,
-    padding: 12,
-    transform: [{ scale: 1.1 }],
-  },
-});

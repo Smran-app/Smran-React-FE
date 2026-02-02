@@ -13,8 +13,10 @@ import { TaskCard } from "@/components/TaskCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import { useReminderStore } from "@/store/reminderStore";
+import { Header } from "@/components/Header";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { groupRemindersByDate } from "@/utils/dateUtils";
+import { EmptyState } from "@/components/EmptyState";
 
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import logo from "@/assets/adaptive-icon.png";
@@ -108,30 +110,7 @@ export default function DashboardScreen() {
   return (
     <ScreenWrapper style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View className="flex flex-row items-center gap-3">
-          <Image source={logo} className="w-14 h-14" />
-          <Text className="text-3xl font-medium">Smran</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.avatar}
-          onPress={() => {
-            router.push("/profile");
-            notificationService.checkScheduled();
-          }}
-        >
-          {!userDetails ? (
-            <Skeleton width={40} height={40} borderRadius={20} />
-          ) : userDetails.profile_img_url ? (
-            <Image
-              source={{ uri: userDetails.profile_img_url }}
-              className="w-10 h-10 rounded-full"
-            />
-          ) : (
-            <Ionicons name="person" size={20} color="#394867" />
-          )}
-        </TouchableOpacity>
-      </View>
+      <Header userDetails={userDetails} />
 
       <View style={styles.content}>
         {isLoading && reminders.length === 0 ? (
@@ -141,17 +120,7 @@ export default function DashboardScreen() {
             <Skeleton width="100%" height={100} borderRadius={16} />
           </View>
         ) : sections.length === 0 ? (
-          <View className="flex items-center justify-center pt-20">
-            <Ionicons
-              name="notifications-off-outline"
-              size={48}
-              color="#cbd5e1"
-            />
-            <Text className="text-slate-400 mt-4 text-lg">
-              No reminders found
-            </Text>
-            <Text className="text-slate-300">Tap + to create one</Text>
-          </View>
+          <EmptyState />
         ) : (
           <SectionList
             sections={sections}
@@ -246,8 +215,9 @@ const styles = StyleSheet.create({
     right: 30,
     width: 56,
     height: 56,
+    zIndex: 10,
     borderRadius: 28,
-    backgroundColor: Colors.palette.lavender,
+    backgroundColor: Colors.palette.skyBlue,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -313,7 +283,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 25,
-    fontWeight: "700",
+    fontWeight: "500",
     color: "#1e293b",
   },
   sectionDate: {

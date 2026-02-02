@@ -340,21 +340,21 @@ export function TaskCard({
             )} */}
             {frequency && (
               <View style={styles.localFlex}>
-                <Text
-                  className="text-lg font-normal text-gray-500"
-                  numberOfLines={1}
-                >
-                  {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
-                </Text>
                 {frequency === "daily" ? (
                   <Feather name="repeat" size={16} color="green" />
                 ) : frequency === "once" ? (
                   <MaterialCommunityIcons
                     name="calendar-multiselect"
                     size={18}
-                    color={Colors.palette.primaryGradient[0]}
+                    color="#3B0069"
                   />
                 ) : null}
+                <Text
+                  className="text-lg font-normal text-gray-500"
+                  numberOfLines={1}
+                >
+                  {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
+                </Text>
               </View>
             )}
 

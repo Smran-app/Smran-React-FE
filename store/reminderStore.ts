@@ -3,6 +3,7 @@ import {
   getReminders,
   createReminder as apiCreateReminder,
   updateReminderStatus,
+  updateReminder as apiUpdateReminder,
   ReminderResponse,
   CreateReminderPayload,
   deleteReminder as apiDeleteReminder,
@@ -31,7 +32,11 @@ interface ReminderState {
   addReminder: (payload: CreateReminderPayload) => Promise<void>;
   toggleReminder: (
     id: string,
-    currentStatus: "active" | "paused",
+    currentStatus: "active" | "inactive",
+  ) => Promise<void>;
+  updateReminder: (
+    id: string,
+    payload: Partial<CreateReminderPayload>,
   ) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
   clearReminders: () => Promise<void>;
@@ -128,8 +133,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     }
   },
 
-  toggleReminder: async (id: string, currentStatus: "active" | "paused") => {
-    const newStatus = currentStatus === "active" ? "paused" : "active";
+  toggleReminder: async (id: string, currentStatus: "active" | "inactive") => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
 
     // 1. Optimistic Update State
     const previousReminders = get().reminders;
@@ -159,6 +164,37 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         reminders: previousReminders,
         error: err.message || "Failed to update reminder",
       });
+    }
+  },
+
+  updateReminder: async (
+    id: string,
+    payload: Partial<CreateReminderPayload>,
+  ) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedReminder = await apiUpdateReminder(id, payload);
+
+      // Update local state
+      set((state) => ({
+        reminders: state.reminders.map((r) =>
+          r.id === id ? updatedReminder : r,
+        ),
+        isLoading: false,
+      }));
+
+      // Update local DB
+      await addLocalReminder(updatedReminder);
+
+      // Reschedule notification
+      await notificationService.cancelReminder(id);
+      await notificationService.scheduleReminder(updatedReminder);
+    } catch (err: any) {
+      set({
+        error: err.message || "Failed to update reminder",
+        isLoading: false,
+      });
+      throw err;
     }
   },
 

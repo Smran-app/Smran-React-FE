@@ -1,4 +1,6 @@
 import { Mic } from "lucide-react-native";
+import { Audio } from "expo-av";
+import * as Haptics from "expo-haptics";
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -18,90 +20,13 @@ import {
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { apiClient } from "@/api/client";
-
+import { Header } from "@/components/Header";
+import { getCurrentUser, UserDetail } from "@/api/auth";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenWrapper } from "@/components/ScreenWrapper";
+import BlinkSound from "@/assets/ding-402325.mp3";
 const { width, height } = Dimensions.get("window");
-
-const LOTUS_COLORS = [
-  "#A78BFA",
-  "#EC4899",
-  "#EF4444",
-  "#F97316",
-  "#FCD34D",
-  "#86EFAC",
-  "#60A5FA",
-  "#38BDF8",
-];
-
-interface LotusPetalProps {
-  color: string;
-  rotation: number;
-  isRecording: boolean;
-  index: number;
-}
-
-function LotusPetal({ color, rotation, isRecording, index }: LotusPetalProps) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(0.7)).current;
-
-  useEffect(() => {
-    if (isRecording) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(scaleAnim, {
-              toValue: 1.3,
-              duration: 800 + index * 50,
-              useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-              toValue: 0.95,
-              duration: 800 + index * 50,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(scaleAnim, {
-              toValue: 0.9,
-              duration: 800 + index * 50,
-              useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-              toValue: 0.6,
-              duration: 800 + index * 50,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0.7,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [isRecording, scaleAnim, opacityAnim, index]);
-
-  return (
-    <Animated.View
-      style={[
-        styles.petal,
-        {
-          backgroundColor: color,
-          transform: [{ rotate: `${rotation}deg` }, { scale: scaleAnim }],
-          opacity: opacityAnim,
-        },
-      ]}
-    />
-  );
-}
+import { MetaRing } from "@/components/MetaRing";
 
 const LOADING_MESSAGES = [
   "Working on creating your reminder...",
@@ -123,7 +48,7 @@ export default function VoiceInputScreen() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const createReminderRef = useRef<((text: string) => Promise<void>) | null>(
@@ -330,25 +255,8 @@ export default function VoiceInputScreen() {
   });
 
   useEffect(() => {
-    if (isRecording) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-    } else {
-      glowAnim.setValue(0);
-    }
-  }, [isRecording, glowAnim]);
+    getCurrentUser().then(setUserDetails).catch(console.error);
+  }, []);
 
   // Rotate loading messages
   useEffect(() => {
@@ -436,6 +344,21 @@ export default function VoiceInputScreen() {
     createReminderRef.current = createReminderFromText;
   }, [createReminderFromText]);
 
+  const playStartSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(BlinkSound);
+      await sound.playAsync();
+      // Clean up sound from memory after it plays
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          await sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log("Error playing sound", error);
+    }
+  };
+
   const startRecording = useCallback(async () => {
     try {
       // Check if speech recognition is available
@@ -483,6 +406,9 @@ export default function VoiceInputScreen() {
       // Start speech recognition (this handles audio capture internally)
       console.log("Starting speech recognition..");
       try {
+        await playStartSound();
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
         ExpoSpeechRecognitionModule.start({
           lang: "en-US",
           continuous: true,
@@ -505,11 +431,11 @@ export default function VoiceInputScreen() {
       } catch (startError: any) {
         console.error("Failed to start speech recognition:", startError);
         setIsRecording(false);
-        Alert.alert(
-          "Failed to Start",
-          "Unable to start speech recognition. Please try again.",
-          [{ text: "OK" }],
-        );
+        // Alert.alert(
+        //   "Failed to Start",
+        //   "Unable to start speech recognition. Please try again.",
+        //   [{ text: "OK" }],
+        // );
         setTranscript("");
       }
     } catch (err: any) {
@@ -519,9 +445,9 @@ export default function VoiceInputScreen() {
 
       const errorMessage =
         err?.message || "An unexpected error occurred. Please try again.";
-      Alert.alert("Recording Error", errorMessage, [
-        { text: "OK", onPress: () => setTranscript("") },
-      ]);
+      // Alert.alert("Recording Error", errorMessage, [
+      //   { text: "OK", onPress: () => setTranscript("") },
+      // ]);
     }
   }, [buttonScaleAnim]);
 
@@ -592,135 +518,117 @@ export default function VoiceInputScreen() {
     }
   }, [isRecording, startRecording, stopRecording]);
 
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.4],
-  });
-
   return (
-    <Pressable
-      style={styles.container}
-      onPress={handlePress}
-      disabled={isCreatingReminder}
-    >
-      {/* Confetti */}
-      {showConfetti && (
-        <ConfettiCannon
-          count={200}
-          origin={{ x: width / 2, y: 0 }}
-          fadeOut={true}
-          autoStart={true}
-          explosionSpeed={350}
-          fallSpeed={3000}
-          colors={[
-            "#A78BFA",
-            "#EC4899",
-            "#EF4444",
-            "#F97316",
-            "#FCD34D",
-            "#86EFAC",
-            "#60A5FA",
-            "#38BDF8",
-          ]}
-        />
-      )}
-
-      <View style={styles.header}>
-        <Text style={styles.appName}>Smran</Text>
-        <Text style={styles.subtitle}>Voice Reminders</Text>
-      </View>
-
-      <View style={styles.lotusContainer}>
-        <Animated.View
-          style={[
-            styles.glow,
-            {
-              opacity: glowOpacity,
-            },
-          ]}
-        />
-
-        {LOTUS_COLORS.map((color, index) => (
-          <LotusPetal
-            key={index}
-            color={color}
-            rotation={(360 / LOTUS_COLORS.length) * index}
-            isRecording={isRecording || isCreatingReminder}
-            index={index}
+    <ScreenWrapper style={styles.container}>
+      <Header userDetails={userDetails} />
+      <Pressable
+        style={styles.container}
+        onPress={handlePress}
+        disabled={isCreatingReminder}
+      >
+        {/* Confetti */}
+        {showConfetti && (
+          <ConfettiCannon
+            count={200}
+            origin={{ x: width / 2, y: 0 }}
+            fadeOut={true}
+            autoStart={true}
+            explosionSpeed={350}
+            fallSpeed={3000}
+            colors={[
+              "#A78BFA",
+              "#EC4899",
+              "#EF4444",
+              "#F97316",
+              "#FCD34D",
+              "#86EFAC",
+              "#60A5FA",
+              "#38BDF8",
+            ]}
           />
-        ))}
-      </View>
-
-      <View style={styles.bottomSection}>
-        {/* Loading State */}
-        {isCreatingReminder ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#60A5FA" />
-            <Text style={styles.loadingMessage}>
-              {LOADING_MESSAGES[loadingMessageIndex]}
-            </Text>
-          </View>
-        ) : successMessage ? (
-          <View style={styles.successContainer}>
-            <Text style={styles.successMessage}>{successMessage}</Text>
-          </View>
-        ) : transcript ? (
-          <View style={styles.transcriptWrapper}>
-            <View style={styles.transcriptHeader}>
-              <Text style={styles.transcriptLabel}>
-                {isRecording
-                  ? "Listening..."
-                  : isProcessing
-                    ? "Processing..."
-                    : "Transcript"}
-              </Text>
-              {!isRecording && transcript && transcript !== "Listening..." && (
-                <Pressable
-                  onPress={() => {
-                    setTranscript("");
-                    setFullTranscript("");
-                  }}
-                  style={styles.clearButton}
-                >
-                  <Text style={styles.clearButtonText}>Clear</Text>
-                </Pressable>
-              )}
-            </View>
-            <ScrollView
-              style={styles.transcriptContainer}
-              contentContainerStyle={styles.transcriptContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.transcript}>{transcript}</Text>
-            </ScrollView>
-          </View>
-        ) : (
-          <Text style={styles.hint}>
-            {isRecording ? "Tap to Stop" : "Tap to Start"}
-          </Text>
         )}
-      </View>
-    </Pressable>
+
+        <View style={styles.voiceHeader}>
+          <Text style={styles.subtitle}>Voice Reminders</Text>
+        </View>
+
+        <View style={styles.lotusContainer}>
+          <MetaRing
+            isRecording={isRecording || isCreatingReminder}
+            size={width * 0.5}
+          />
+        </View>
+
+        <View style={styles.bottomSection}>
+          {/* Loading State */}
+          {isCreatingReminder ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#60A5FA" />
+              <Text style={styles.loadingMessage}>
+                {LOADING_MESSAGES[loadingMessageIndex]}
+              </Text>
+            </View>
+          ) : successMessage ? (
+            <View style={styles.successContainer}>
+              <Text style={styles.successMessage}>{successMessage}</Text>
+            </View>
+          ) : transcript ? (
+            <View style={styles.transcriptWrapper}>
+              <View style={styles.transcriptHeader}>
+                <Text style={styles.transcriptLabel}>
+                  {isRecording
+                    ? "Listening..."
+                    : isProcessing
+                      ? "Processing..."
+                      : "Transcript"}
+                </Text>
+                {!isRecording &&
+                  transcript &&
+                  transcript !== "Listening..." && (
+                    <Pressable
+                      onPress={() => {
+                        setTranscript("");
+                        setFullTranscript("");
+                      }}
+                      style={styles.clearButton}
+                    >
+                      <Text style={styles.clearButtonText}>Clear</Text>
+                    </Pressable>
+                  )}
+              </View>
+              <ScrollView
+                style={styles.transcriptContainer}
+                contentContainerStyle={styles.transcriptContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.transcript}>{transcript}</Text>
+              </ScrollView>
+            </View>
+          ) : (
+            <Text style={styles.hint}>
+              {isRecording ? "Tap to Stop" : "Tap to Start"}
+            </Text>
+          )}
+        </View>
+      </Pressable>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    paddingTop: 60,
+    // backgroundColor: "#FFFFFF",
   },
   header: {
-    paddingTop: 90,
+    paddingTop: 60,
+  },
+  voiceHeader: {
+    paddingTop: 30,
     paddingHorizontal: 24,
     alignItems: "center",
-    marginBottom: 90,
-  },
-  appName: {
-    fontSize: 48,
-    fontWeight: "300" as const,
-    color: "#1F2937",
-    letterSpacing: 4,
-    marginBottom: 8,
+    // marginBottom: 60,
   },
   subtitle: {
     fontSize: 14,
@@ -733,43 +641,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative" as const,
-  },
-  petal: {
-    position: "absolute" as const,
-    width: 140,
-    height: 220,
-    borderRadius: 100,
-    top: "50%",
-    left: "50%",
-    marginLeft: -70,
-    marginTop: -180,
-  },
-  glow: {
-    position: "absolute" as const,
-    width: 400,
-    height: 400,
-    borderRadius: 200,
-    backgroundColor: "#60A5FA",
-    shadowColor: "#60A5FA",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 100,
-  },
-  centerCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    zIndex: 10,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    marginBottom: 24,
   },
   micButton: {
     width: "100%",

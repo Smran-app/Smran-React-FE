@@ -153,7 +153,7 @@ export default function Profile() {
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity
               style={styles.menuButton}
-              onPress={() => router.push("/(tabs)/manage")}
+              onPress={() => router.push("/reminderProfileScreen")}
             >
               <View style={styles.menuRow}>
                 <Ionicons

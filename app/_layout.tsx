@@ -50,6 +50,10 @@ function RootLayoutContent() {
           name="modal"
           options={{ presentation: "transparentModal", animation: "fade" }}
         />
+        <Stack.Screen
+          name="reminderProfileScreen"
+          options={{ presentation: "transparentModal", animation: "fade" }}
+        />
       </Stack>
     </NavigationThemeProvider>
   );
