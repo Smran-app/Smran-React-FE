@@ -153,6 +153,34 @@ export default function Profile() {
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity
               style={styles.menuButton}
+              onPress={() => router.push("/(tabs)/manage")}
+            >
+              <View style={styles.menuRow}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={24}
+                  color={isDark ? Colors.dark.text : Colors.light.text}
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: isDark ? Colors.dark.text : "#1e293b" },
+                  ]}
+                >
+                  Manage Reminder Profile
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={isDark ? Colors.dark.text : Colors.light.text}
+              />
+            </TouchableOpacity>
+          </GlassCard>
+
+          <GlassCard style={styles.menuItem}>
+            <TouchableOpacity
+              style={styles.menuButton}
               onPress={async () => {
                 // notificationService.deleteAllScheduledNotifications();
                 const device_id = await SecureStore.getItemAsync("device_id");

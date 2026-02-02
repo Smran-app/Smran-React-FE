@@ -34,7 +34,9 @@ export default function Onboarding() {
         <View style={styles.bottomContainer}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.replace("/login")}
+            onPress={() => {
+              router.replace("/login");
+            }}
           >
             <Text style={styles.buttonText}>Get started</Text>
           </TouchableOpacity>

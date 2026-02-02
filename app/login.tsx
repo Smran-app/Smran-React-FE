@@ -61,7 +61,11 @@ export default function Login() {
       console.log(`${provider} Login Success:`, data);
       await SecureStore.setItemAsync("access", data.access_token);
       await SecureStore.setItemAsync("device_id", data.device?.id || "");
-      router.replace("/(tabs)");
+      if (data.is_onboarding_completed === false) {
+        router.replace("/onboarding_questions");
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (error) {
       console.error(`${provider} Login Error:`, error);
       // Handle error appropriately, maybe show an alert to the user

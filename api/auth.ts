@@ -29,6 +29,8 @@ export interface AuthResponse {
   refresh_token?: string;
   user?: UserDetail;
   device?: DeviceInfo;
+  is_new_user?: boolean;
+  is_onboarding_completed?: boolean;
 }
 
 export type AuthProvider = "google" | "apple";

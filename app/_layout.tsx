@@ -16,7 +16,11 @@ import { initDB } from "@/data/db";
 import { registerBackgroundFetchTask } from "@/tasks/syncReminders";
 import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider, useAppTheme } from "@/context/ThemeContext";
+import { OnboardingProvider } from "@/app/contexts/OnboardingContext";
+
+const queryClient = new QueryClient();
 
 function RootLayoutContent() {
   const { colorScheme } = useAppTheme();
@@ -86,8 +90,12 @@ export default function RootLayout() {
   };
 
   return (
-    <ThemeProvider>
-      <RootLayoutContent />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <OnboardingProvider>
+          <RootLayoutContent />
+        </OnboardingProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
