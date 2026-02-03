@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { ReminderProfileResponse } from "./reminder-profiles";
 
 export type Frequency = "once" | "daily" | "weekly" | "monthly" | "yearly";
 export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
@@ -38,7 +39,10 @@ export interface ReminderResponse {
   name: string;
   link?: string | null;
   status: "active" | "inactive";
+  profile_id: number | null;
+  profile?: ReminderProfileResponse;
   repeat_metadata: RepeatMetadata;
+  description?: string | null;
   next_run_time: string | null; // ISO string with offset
   link_metadata?: LinkMetadata | null;
 }
@@ -46,6 +50,7 @@ export interface ReminderResponse {
 export interface CreateReminderPayload {
   user_id: number | null;
   name: string;
+  description?: string | null;
   link?: string | null;
   repeat_metadata: RepeatMetadata;
 }
@@ -92,7 +97,7 @@ export const updateReminder = async (
 };
 
 export const deleteReminder = async (id: string): Promise<void> => {
-  return apiClient<void>(`/reminders/${id}/`, {
+  return apiClient<void>(`/reminders/${id}`, {
     method: "DELETE",
     useAuth: true,
   });

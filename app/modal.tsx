@@ -32,18 +32,27 @@ import {
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { BlurView } from "expo-blur";
 import { getCurrentUser, UserDetail } from "@/api/auth";
+import { useAppTheme } from "@/context/ThemeContext";
+import { Colors } from "@/constants/Colors";
+import {
+  getReminderProfiles,
+  ReminderProfileResponse,
+} from "@/api/reminder-profiles";
 
 type RepeatType = "once" | "daily" | "weekly" | "monthly" | "yearly";
 type EndsType = "never" | "on_date" | "after_occurrences";
 type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export default function ModalScreen() {
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addReminder, updateReminder, reminders, isLoading } =
     useReminderStore();
 
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -51,6 +60,12 @@ export default function ModalScreen() {
   // Time Section
   const [time, setTime] = useState(new Date());
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+
+  // Profiles
+  const [profiles, setProfiles] = useState<ReminderProfileResponse[]>([]);
+  const [selectedProfile, setSelectedProfile] =
+    useState<ReminderProfileResponse | null>(null);
+  const [showProfileSelector, setShowProfileSelector] = useState(false);
 
   // Repeat Section
   const [showRepeatSettings, setShowRepeatSettings] = useState(false);
@@ -83,6 +98,16 @@ export default function ModalScreen() {
     const d = new Date();
     d.setHours(d.getHours() + 1, 0, 0, 0);
     setTime(d);
+
+    // Fetch Profiles
+    getReminderProfiles()
+      .then((data) => {
+        setProfiles(data);
+        if (data.length > 0) {
+          setSelectedProfile(data[0]);
+        }
+      })
+      .catch(console.error);
 
     if (id) {
       const reminder = reminders.find((r) => r.id === id);
@@ -159,6 +184,8 @@ export default function ModalScreen() {
       const payload = {
         user_id: userDetails?.id || null,
         name,
+        profile_id: selectedProfile?.id || null,
+        description: description.trim() || null,
         link: link.trim() || null,
         repeat_metadata,
       };
@@ -198,7 +225,17 @@ export default function ModalScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         style={styles.keyboardView}
       >
-        <BlurView intensity={80} tint="light" style={styles.sheet}>
+        <BlurView
+          intensity={80}
+          tint={isDark ? "dark" : "light"}
+          style={[
+            styles.sheet,
+            isDark && {
+              backgroundColor: "rgba(15, 23, 42, 0.9)",
+              borderColor: "rgba(255, 255, 255, 0.1)",
+            },
+          ]}
+        >
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
@@ -207,21 +244,21 @@ export default function ModalScreen() {
           >
             {/* Title */}
             <TextInput
-              style={styles.titleInput}
+              style={[styles.titleInput, isDark && { color: Colors.dark.text }]}
               placeholder="Task name"
               value={name}
               onChangeText={setName}
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
               autoFocus
             />
 
             {/* Description */}
             <TextInput
-              style={styles.descriptionInput}
+              style={[styles.descriptionInput, isDark && { color: "#94A3B8" }]}
               placeholder="Description"
-              value={link}
-              onChangeText={setLink}
-              placeholderTextColor="#cbd5e1"
+              value={description}
+              onChangeText={setDescription}
+              placeholderTextColor={isDark ? "#334155" : "#cbd5e1"}
               multiline
             />
 
@@ -231,18 +268,26 @@ export default function ModalScreen() {
               <TouchableOpacity
                 style={[
                   styles.actionChip,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
                   repeatType !== "once" && styles.actionChipActive,
+                  repeatType !== "once" &&
+                    isDark && { borderColor: "rgba(16, 185, 129, 0.3)" },
                 ]}
                 onPress={() => setDatePickerVisible(true)}
               >
                 <Calendar
                   size={16}
-                  color={repeatType !== "once" ? "#059669" : "#64748b"}
+                  color={repeatType !== "once" ? "#10B981" : "#64748b"}
                 />
                 <Text
                   style={[
                     styles.actionChipText,
+                    isDark && { color: "#94A3B8" },
                     repeatType !== "once" && styles.actionChipTextActive,
+                    repeatType !== "once" && isDark && { color: "#10B981" },
                   ]}
                 >
                   {startDate.toLocaleDateString([], {
@@ -255,11 +300,22 @@ export default function ModalScreen() {
 
               {/* Time Chip */}
               <TouchableOpacity
-                style={styles.actionChip}
+                style={[
+                  styles.actionChip,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
+                ]}
                 onPress={() => setTimePickerVisible(true)}
               >
                 <AlarmClock size={16} color="#64748b" />
-                <Text style={styles.actionChipText}>
+                <Text
+                  style={[
+                    styles.actionChipText,
+                    isDark && { color: "#94A3B8" },
+                  ]}
+                >
                   {time.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -271,33 +327,64 @@ export default function ModalScreen() {
               <TouchableOpacity
                 style={[
                   styles.actionChip,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
                   showRepeatSettings && styles.actionChipActive,
+                  showRepeatSettings &&
+                    isDark && { borderColor: "rgba(16, 185, 129, 0.3)" },
                 ]}
                 onPress={toggleRepeatSettings}
               >
                 <RotateCw
                   size={16}
-                  color={showRepeatSettings ? "#059669" : "#64748b"}
+                  color={showRepeatSettings ? "#10B981" : "#64748b"}
                 />
                 <Text
                   style={[
                     styles.actionChipText,
+                    isDark && { color: "#94A3B8" },
                     showRepeatSettings && styles.actionChipTextActive,
+                    showRepeatSettings && isDark && { color: "#10B981" },
                   ]}
                 >
                   Repeat
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.actionChip}>
+              {/* <TouchableOpacity
+                style={[
+                  styles.actionChip,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
+                ]}
+              >
                 <Flag size={16} color="#64748b" />
-                <Text style={styles.actionChipText}>Priority</Text>
-              </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.actionChipText,
+                    isDark && { color: "#94A3B8" },
+                  ]}
+                >
+                  Priority
+                </Text>
+              </TouchableOpacity> */}
             </View>
 
             {/* Advanced Repeat Settings */}
             {showRepeatSettings && (
-              <View style={styles.settingsPanel}>
+              <View
+                style={[
+                  styles.settingsPanel,
+                  isDark && {
+                    backgroundColor: "rgba(30, 41, 59, 0.5)",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
+                ]}
+              >
                 {/* Frequency */}
                 <ScrollView
                   horizontal
@@ -311,14 +398,22 @@ export default function ModalScreen() {
                       key={freq}
                       style={[
                         styles.freqOption,
+                        isDark && {
+                          backgroundColor: "#1e293b",
+                          borderColor: "rgba(255, 255, 255, 0.1)",
+                        },
                         repeatType === freq && styles.freqOptionSelected,
+                        repeatType === freq &&
+                          isDark && { backgroundColor: "white" },
                       ]}
                       onPress={() => setRepeatType(freq)}
                     >
                       <Text
                         style={[
                           styles.freqText,
+                          isDark && { color: "#94A3B8" },
                           repeatType === freq && styles.freqTextSelected,
+                          repeatType === freq && isDark && { color: "black" },
                         ]}
                       >
                         {freq.charAt(0).toUpperCase() + freq.slice(1)}
@@ -329,14 +424,33 @@ export default function ModalScreen() {
 
                 {/* Interval */}
                 <View style={styles.settingRow}>
-                  <Text style={styles.settingLabel}>Every</Text>
+                  <Text
+                    style={[
+                      styles.settingLabel,
+                      isDark && { color: "#94A3B8" },
+                    ]}
+                  >
+                    Every
+                  </Text>
                   <TextInput
-                    style={styles.intervalInput}
+                    style={[
+                      styles.intervalInput,
+                      isDark && {
+                        backgroundColor: "#1e293b",
+                        borderColor: "rgba(255, 255, 255, 0.1)",
+                        color: "white",
+                      },
+                    ]}
                     value={interval}
                     onChangeText={setInterval}
                     keyboardType="number-pad"
                   />
-                  <Text style={styles.settingLabel}>
+                  <Text
+                    style={[
+                      styles.settingLabel,
+                      isDark && { color: "#94A3B8" },
+                    ]}
+                  >
                     {repeatType === "daily"
                       ? "days"
                       : repeatType === "weekly"
@@ -355,16 +469,25 @@ export default function ModalScreen() {
                         key={d.value}
                         style={[
                           styles.weekdayBtn,
+                          isDark && {
+                            backgroundColor: "#1e293b",
+                            borderColor: "rgba(255, 255, 255, 0.1)",
+                          },
                           selectedWeekdays.includes(d.value) &&
                             styles.weekdayBtnSelected,
+                          selectedWeekdays.includes(d.value) &&
+                            isDark && { backgroundColor: "white" },
                         ]}
                         onPress={() => toggleWeekday(d.value)}
                       >
                         <Text
                           style={[
                             styles.weekdayText,
+                            isDark && { color: "#94A3B8" },
                             selectedWeekdays.includes(d.value) &&
                               styles.weekdayTextSelected,
+                            selectedWeekdays.includes(d.value) &&
+                              isDark && { color: "black" },
                           ]}
                         >
                           {d.label}
@@ -376,19 +499,31 @@ export default function ModalScreen() {
 
                 {/* Ends Rule */}
                 <View style={styles.settingCol}>
-                  <Text style={styles.subHeader}>Ends</Text>
+                  <Text
+                    style={[styles.subHeader, isDark && { color: "#64748B" }]}
+                  >
+                    Ends
+                  </Text>
                   <View style={styles.endsRow}>
                     <TouchableOpacity
                       onPress={() => setEndsType("never")}
                       style={[
                         styles.endsOption,
+                        isDark && {
+                          backgroundColor: "#1e293b",
+                          borderColor: "rgba(255, 255, 255, 0.1)",
+                        },
                         endsType === "never" && styles.endsOptionSelected,
+                        endsType === "never" &&
+                          isDark && { backgroundColor: "white" },
                       ]}
                     >
                       <Text
                         style={[
                           styles.endsText,
+                          isDark && { color: "#94A3B8" },
                           endsType === "never" && styles.endsTextSelected,
+                          endsType === "never" && isDark && { color: "black" },
                         ]}
                       >
                         Never
@@ -402,13 +537,22 @@ export default function ModalScreen() {
                       }}
                       style={[
                         styles.endsOption,
+                        isDark && {
+                          backgroundColor: "#1e293b",
+                          borderColor: "rgba(255, 255, 255, 0.1)",
+                        },
                         endsType === "on_date" && styles.endsOptionSelected,
+                        endsType === "on_date" &&
+                          isDark && { backgroundColor: "white" },
                       ]}
                     >
                       <Text
                         style={[
                           styles.endsText,
+                          isDark && { color: "#94A3B8" },
                           endsType === "on_date" && styles.endsTextSelected,
+                          endsType === "on_date" &&
+                            isDark && { color: "black" },
                         ]}
                       >
                         {endsType === "on_date"
@@ -421,8 +565,14 @@ export default function ModalScreen() {
                       onPress={() => setEndsType("after_occurrences")}
                       style={[
                         styles.endsOption,
+                        isDark && {
+                          backgroundColor: "#1e293b",
+                          borderColor: "rgba(255, 255, 255, 0.1)",
+                        },
                         endsType === "after_occurrences" &&
                           styles.endsOptionSelected,
+                        endsType === "after_occurrences" &&
+                          isDark && { backgroundColor: "white" },
                       ]}
                     >
                       <TextInput
@@ -432,15 +582,22 @@ export default function ModalScreen() {
                         editable={endsType === "after_occurrences"}
                         style={[
                           styles.smallInput,
-                          endsType === "after_occurrences" && { color: "#fff" },
+                          isDark && { color: "#94A3B8" },
+                          endsType === "after_occurrences" && {
+                            color: isDark ? "black" : "#fff",
+                          },
                         ]}
                         keyboardType="numeric"
+                        placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
                       />
                       <Text
                         style={[
                           styles.endsText,
+                          isDark && { color: "#94A3B8" },
                           endsType === "after_occurrences" &&
                             styles.endsTextSelected,
+                          endsType === "after_occurrences" &&
+                            isDark && { color: "black" },
                         ]}
                       >
                         times
@@ -453,12 +610,71 @@ export default function ModalScreen() {
           </ScrollView>
 
           {/* Footer Area */}
-          <View style={styles.sheetFooter}>
-            <TouchableOpacity style={styles.projectSelector}>
-              <Mail size={16} color="#64748b" />
-              <Text style={styles.projectText}>Inbox</Text>
-              <ChevronDown size={12} color="#64748b" />
-            </TouchableOpacity>
+          <View
+            style={[
+              styles.sheetFooter,
+              isDark && { borderTopColor: "rgba(255,255,255,0.05)" },
+            ]}
+          >
+            <View style={styles.projectSelectorContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.projectSelector,
+                  isDark && { backgroundColor: "#1e293b" },
+                ]}
+                onPress={() => setShowProfileSelector(!showProfileSelector)}
+              >
+                <Mail size={16} color="#64748b" />
+                <Text
+                  style={[styles.projectText, isDark && { color: "#94A3B8" }]}
+                >
+                  {selectedProfile ? selectedProfile.name : "Inbox"}
+                </Text>
+                <ChevronDown size={12} color="#64748b" />
+              </TouchableOpacity>
+
+              {showProfileSelector && profiles.length > 0 && (
+                <BlurView
+                  intensity={90}
+                  tint={isDark ? "dark" : "light"}
+                  style={[
+                    styles.profileDropdown,
+                    isDark && {
+                      backgroundColor: "rgba(30, 41, 59, 0.95)",
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                    },
+                  ]}
+                >
+                  {profiles.map((profile) => (
+                    <TouchableOpacity
+                      key={profile.id}
+                      style={[
+                        styles.profileOption,
+                        selectedProfile?.id === profile.id &&
+                          styles.profileOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedProfile(profile);
+                        setShowProfileSelector(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.profileOptionText,
+                          isDark && { color: "#94A3B8" },
+                          selectedProfile?.id === profile.id && {
+                            color: isDark ? "white" : "#1e293b",
+                            fontWeight: "600",
+                          },
+                        ]}
+                      >
+                        {profile.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </BlurView>
+              )}
+            </View>
 
             <TouchableOpacity
               style={[
@@ -747,5 +963,37 @@ const styles = StyleSheet.create({
     backgroundColor: "#fda4af",
     shadowOpacity: 0,
     elevation: 0,
+  },
+  projectSelectorContainer: {
+    position: "relative",
+  },
+  profileDropdown: {
+    position: "absolute",
+    bottom: "120%",
+    left: 0,
+    minWidth: 150,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    padding: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    overflow: "hidden",
+  },
+  profileOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  profileOptionSelected: {
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+  },
+  profileOptionText: {
+    fontSize: 14,
+    color: "#64748b",
   },
 });

@@ -5,9 +5,10 @@ import {
   SectionList,
   Image,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
-
+import { useAppTheme } from "@/context/ThemeContext";
 import { ScreenWrapper } from "@/components/ScreenWrapper";
 import { TaskCard } from "@/components/TaskCard";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +18,7 @@ import { Header } from "@/components/Header";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { groupRemindersByDate } from "@/utils/dateUtils";
 import { EmptyState } from "@/components/EmptyState";
+import { BlurView } from "expo-blur";
 
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import logo from "@/assets/adaptive-icon.png";
@@ -27,6 +29,8 @@ import * as SecureStore from "expo-secure-store";
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   const { reminders, isLoading, fetchHomeReminders, toggleReminder } =
     useReminderStore();
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
@@ -107,6 +111,22 @@ export default function DashboardScreen() {
 
   const sections = useMemo(() => groupRemindersByDate(reminders), [reminders]);
 
+  const themedStyles = useMemo(() => {
+    return {
+      sectionHeader: {
+        backgroundColor: isDark
+          ? "rgba(15, 23, 42, 0.4)"
+          : "rgba(255, 255, 255, 0.4)",
+      },
+      sectionTitle: {
+        color: isDark ? Colors.dark.text : "#1e293b",
+      },
+      sectionDate: {
+        color: isDark ? "#A1A1AA" : "#64748b",
+      },
+    };
+  }, [isDark]);
+
   return (
     <ScreenWrapper style={styles.container}>
       {/* Header */}
@@ -129,22 +149,33 @@ export default function DashboardScreen() {
               paddingBottom: 160,
               // paddingHorizontal: 10,
             }}
+            stickySectionHeadersEnabled={Platform.OS === "ios" ? true : false}
             showsVerticalScrollIndicator={false}
             renderSectionHeader={({ section }) => (
-              <View
-                style={styles.sectionHeader}
-                className={`${section === sections[0] ? "border-t-0" : "border-t-[0.5px] border-t-[#cbd5e1]"}`}
+              <BlurView
+                intensity={Platform.OS === "ios" ? 40 : 0}
+                tint={isDark ? "dark" : "light"}
+                style={[styles.sectionHeader]}
+                className={`${
+                  section === sections[0]
+                    ? "border-t-0"
+                    : `border-t-[0.5px] ${isDark ? "border-t-[#334155]" : "border-t-[#cbd5e1]"}`
+                }`}
               >
                 {section.title && (
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <Text
+                    style={[styles.sectionTitle, themedStyles.sectionTitle]}
+                  >
+                    {section.title}
+                  </Text>
                 )}
                 <Text
-                  style={styles.sectionDate}
+                  style={[styles.sectionDate, themedStyles.sectionDate]}
                   className={`${section.title === "" ? "py-3" : ""}`}
                 >
                   {section.dateString}
                 </Text>
-              </View>
+              </BlurView>
             )}
             renderItem={({ item, index, section }) => {
               let timeString = "--:--";
@@ -172,7 +203,7 @@ export default function DashboardScreen() {
                 <TaskCard
                   title={displayTitle}
                   frequency={item.repeat_metadata.frequency}
-                  description={displayDesc}
+                  description={item.description || ""}
                   time={timeString}
                   isOn={item.status === "active"}
                   onToggle={() => toggleReminder(item.id, item.status)}
@@ -195,6 +226,7 @@ export default function DashboardScreen() {
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
+        className={`${isDark ? "bg-[#6EE7B7]" : "bg-[#7DD3FC]"}`}
         onPress={() => router.push("/modal")}
         activeOpacity={0.8}
       >
@@ -217,7 +249,6 @@ const styles = StyleSheet.create({
     height: 56,
     zIndex: 10,
     borderRadius: 28,
-    backgroundColor: Colors.palette.skyBlue,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -274,21 +305,17 @@ const styles = StyleSheet.create({
     // paddingLeft: 10,
   },
   sectionHeader: {
-    paddingVertical: 6,
+    paddingVertical: 12, // Increased padding for better glass surface
     paddingHorizontal: 16,
-    backgroundColor: "transparent",
-    // borderBottomWidth: 0.5,
-    // borderBottomColor: "#00000010",
-    marginBottom: 10,
+    zIndex: 100,
+    marginBottom: 4, // Reduced margin to feel more integrated
   },
   sectionTitle: {
     fontSize: 25,
     fontWeight: "500",
-    color: "#1e293b",
   },
   sectionDate: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1e293b",
   },
 });

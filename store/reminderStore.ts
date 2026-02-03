@@ -40,12 +40,14 @@ interface ReminderState {
   ) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
   clearReminders: () => Promise<void>;
+  deletingIds: Set<string>;
 }
 
 export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
   isLoading: false,
   error: null,
+  deletingIds: new Set(),
 
   // Fetch Today & Tomorrow (for Home Screen)
   fetchHomeReminders: async () => {
@@ -60,9 +62,12 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       // 3. Upsert with isPartial=true
       await upsertReminders(remoteReminders.data);
 
-      // 4. Update State
+      // 4. Update State (filter out currently deleting)
       const updatedLocalReminders = await getAllReminders();
-      set({ reminders: updatedLocalReminders, isLoading: false });
+      const filtered = updatedLocalReminders.filter(
+        (r) => !get().deletingIds.has(r.id),
+      );
+      set({ reminders: filtered, isLoading: false });
 
       // 5. Schedule (simplified: re-schedule all or just new ones.
       //    For efficiency, maybe just schedule incoming ones, but safe to re-run all generally)
@@ -89,7 +94,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       await upsertReminders(res.data, false);
 
       const all = await getAllReminders();
-      set({ reminders: all, isLoading: false });
+      const filtered = all.filter((r) => !get().deletingIds.has(r.id));
+      set({ reminders: filtered, isLoading: false });
 
       for (const r of all) {
         try {
@@ -201,6 +207,13 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   deleteReminder: async (id: string) => {
     const previousReminders = get().reminders;
 
+    // Add to deletingIds to ignore it in sync calls
+    set((state) => {
+      const newDeleting = new Set(state.deletingIds);
+      newDeleting.add(id);
+      return { deletingIds: newDeleting };
+    });
+
     // 1. Optimistic Update State
     set((state) => ({
       reminders: state.reminders.filter((r) => r.id !== id),
@@ -217,13 +230,23 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     // 3. API Call
     try {
       await apiDeleteReminder(id);
+      // Success: Remove from deletingIds
+      set((state) => {
+        const newDeleting = new Set(state.deletingIds);
+        newDeleting.delete(id);
+        return { deletingIds: newDeleting };
+      });
     } catch (err: any) {
-      // Rollback on error?
-      // If API fails, we might want to keep it deleted locally and retry sync later.
-      // But for now, simple rollback.
-      set({
-        reminders: previousReminders,
-        error: err.message || "Failed to delete reminder",
+      console.error("API delete failed, rolling back", err);
+      // Rollback on error
+      set((state) => {
+        const newDeleting = new Set(state.deletingIds);
+        newDeleting.delete(id);
+        return {
+          deletingIds: newDeleting,
+          reminders: previousReminders,
+          error: err.message || "Failed to delete reminder",
+        };
       });
       // Restore DB
       const restored = previousReminders.find((r) => r.id === id);

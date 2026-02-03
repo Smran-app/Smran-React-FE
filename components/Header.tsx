@@ -5,7 +5,8 @@ import { Skeleton } from "@/components/Skeleton";
 import { UserDetail } from "@/api/auth";
 import logo from "@/assets/adaptive-icon.png";
 import { notificationService } from "@/utils/NotificationService";
-
+import { useAppTheme } from "@/context/ThemeContext";
+import { Colors } from "@/constants/Colors";
 interface HeaderProps {
   userDetails: UserDetail | null;
   showAvatar?: boolean;
@@ -13,12 +14,21 @@ interface HeaderProps {
 
 export const Header = ({ userDetails, showAvatar = true }: HeaderProps) => {
   const router = useRouter();
-
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   return (
     <View style={styles.header}>
       <View className="flex flex-row items-center gap-3">
         <Image source={logo} className="w-14 h-14" />
-        <Text className="text-3xl font-medium">Smran</Text>
+        <Text
+          className="text-3xl font-opensans font-semibold"
+          style={{
+            fontFamily: "OpenSans-Bold",
+            color: isDark ? Colors.dark.text : Colors.light.text,
+          }}
+        >
+          Smran
+        </Text>
       </View>
       {showAvatar && (
         <TouchableOpacity

@@ -8,18 +8,20 @@ import {
 } from "react-native";
 import { ScreenWrapper } from "@/components/ScreenWrapper";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { GlassCard } from "@/components/GlassCard";
+import RevenueCatUI from "react-native-purchases-ui";
 import { Colors } from "@/constants/Colors";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { getCurrentUser, UserDetail } from "@/api/auth";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/Skeleton";
-import * as SecureStore from "expo-secure-store";
 import { notificationService } from "@/utils/NotificationService";
 import { useAppTheme } from "@/context/ThemeContext";
 import { Modal } from "react-native";
 import { useReminderStore } from "@/store/reminderStore";
+import * as SecureStore from "expo-secure-store";
+import Purchases, { PurchasesOffering } from "react-native-purchases";
 export default function Profile() {
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
   const { theme, setTheme, colorScheme } = useAppTheme();
@@ -41,6 +43,7 @@ export default function Profile() {
     await googleSignOut();
     await SecureStore.deleteItemAsync("user");
     await SecureStore.deleteItemAsync("access");
+    await SecureStore.deleteItemAsync("has_completed_onboarding");
     // flush local db
     await clearReminders();
     router.replace("/login");
@@ -49,11 +52,39 @@ export default function Profile() {
     router.back();
   };
 
+  const handleBuyPro = async () => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      const current_offering = offerings.all.smran_pro as PurchasesOffering;
+      const result = await RevenueCatUI.presentPaywall({
+        offering: current_offering,
+      });
+      console.log("Paywall result:", result);
+    } catch (error) {
+      console.error("Error presenting paywall:", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const user = await SecureStore.getItemAsync("user");
+        if (user) {
+          setUserDetails(JSON.parse(user));
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+    fetchUserDetails();
+  }, []);
+
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
         const user = await getCurrentUser();
         setUserDetails(user);
+        await SecureStore.setItemAsync("user", JSON.stringify(user));
       } catch (error) {
         console.error("Error fetching user details:", error);
       }
@@ -150,6 +181,41 @@ export default function Profile() {
             </TouchableOpacity>
           </GlassCard>
 
+          <GlassCard
+            style={[
+              styles.menuItem,
+              {
+                backgroundColor: isDark
+                  ? "rgba(234, 179, 8, 0.15)"
+                  : "rgba(234, 179, 8, 0.1)",
+                borderColor: "#eab308",
+              },
+            ]}
+          >
+            <TouchableOpacity style={styles.menuButton} onPress={handleBuyPro}>
+              <View style={styles.menuRow}>
+                <MaterialCommunityIcons
+                  name="crown"
+                  size={24}
+                  color="#eab308"
+                />
+                <Text
+                  style={[
+                    styles.menuText,
+                    { color: isDark ? "#fde047" : "#854d0e" },
+                  ]}
+                >
+                  Buy Smran Pro
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={24}
+                color={isDark ? "#fde047" : "#854d0e"}
+              />
+            </TouchableOpacity>
+          </GlassCard>
+
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity
               style={styles.menuButton}
@@ -178,7 +244,7 @@ export default function Profile() {
             </TouchableOpacity>
           </GlassCard>
 
-          <GlassCard style={styles.menuItem}>
+          {/* <GlassCard style={styles.menuItem}>
             <TouchableOpacity
               style={styles.menuButton}
               onPress={async () => {
@@ -208,7 +274,7 @@ export default function Profile() {
                 color={isDark ? Colors.dark.text : Colors.light.text}
               />
             </TouchableOpacity>
-          </GlassCard>
+          </GlassCard> */}
 
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity style={styles.menuButton} onPress={handleLogout}>
@@ -233,43 +299,56 @@ export default function Profile() {
             activeOpacity={1}
             onPress={() => setShowThemeModal(false)}
           >
-            <GlassCard style={styles.modalContent}>
-              <Text
-                style={[
-                  styles.modalTitle,
-                  { color: isDark ? Colors.dark.text : "#1e293b" },
-                ]}
-              >
-                Select Theme
-              </Text>
-              {(["system", "light", "dark"] as const).map((mode) => (
-                <TouchableOpacity
-                  key={mode}
-                  style={styles.themeOption}
-                  onPress={() => {
-                    setTheme(mode);
-                    setShowThemeModal(false);
-                  }}
+            <View
+              className={`rounded-lg ${isDark ? "bg-gray-800" : "bg-white"}`}
+            >
+              <View className="flex-row items-center p-4 justify-between border-b border-gray-200">
+                <Text
+                  style={[
+                    styles.modalTitle,
+                    { color: isDark ? Colors.dark.text : "#1e293b" },
+                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.themeOptionText,
-                      { color: isDark ? Colors.dark.text : "#1e293b" },
-                      theme === mode && styles.themeOptionActive,
-                    ]}
-                  >
-                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                  </Text>
-                  {theme === mode && (
-                    <Ionicons
-                      name="checkmark"
-                      size={20}
-                      color={Colors.light.tint}
-                    />
-                  )}
+                  Select Theme
+                </Text>
+                <TouchableOpacity onPress={() => setShowThemeModal(false)}>
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={isDark ? Colors.dark.text : Colors.light.text}
+                  />
                 </TouchableOpacity>
-              ))}
-            </GlassCard>
+              </View>
+              <View className="p-5">
+                {(["system", "light", "dark"] as const).map((mode) => (
+                  <TouchableOpacity
+                    key={mode}
+                    style={styles.themeOption}
+                    onPress={() => {
+                      setTheme(mode);
+                      setShowThemeModal(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.themeOptionText,
+                        { color: isDark ? Colors.dark.text : "#1e293b" },
+                        theme === mode && styles.themeOptionActive,
+                      ]}
+                    >
+                      {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    </Text>
+                    {theme === mode && (
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={Colors.light.tint}
+                      />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </TouchableOpacity>
         </Modal>
       </View>
@@ -355,13 +434,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 12,
+    // padding: 24,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "600",
-    marginBottom: 20,
   },
   themeOption: {
     flexDirection: "row",

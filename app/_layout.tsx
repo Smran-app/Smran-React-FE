@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { useFonts } from "expo-font";
 import {
   ThemeProvider as NavigationThemeProvider,
   DarkTheme,
@@ -19,7 +20,8 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider, useAppTheme } from "@/context/ThemeContext";
 import { OnboardingProvider } from "@/app/contexts/OnboardingContext";
-
+import Purchases, { LOG_LEVEL } from "react-native-purchases";
+import { Platform } from "react-native";
 const queryClient = new QueryClient();
 
 function RootLayoutContent() {
@@ -46,6 +48,7 @@ function RootLayoutContent() {
           name="login"
           options={{ headerShown: false, animation: "fade" }}
         />
+
         <Stack.Screen
           name="modal"
           options={{ presentation: "transparentModal", animation: "fade" }}
@@ -68,9 +71,11 @@ export default function RootLayout() {
     iosClientId: process.env.EXPO_PUBLIC_IOS_ID,
   });
 
-  useEffect(() => {
-    initApp();
-  }, []);
+  const [fontsLoaded] = useFonts({
+    "OpenSans-Regular": require("../assets/open-sans/OpenSans-Regular.ttf"),
+    "OpenSans-Medium": require("../assets/open-sans/OpenSans-Medium.ttf"),
+    "OpenSans-Bold": require("../assets/open-sans/OpenSans-Bold.ttf"),
+  });
 
   const initApp = async () => {
     // 1. Init DB
@@ -92,6 +97,32 @@ export default function RootLayout() {
     registerBackgroundFetchTask(); // Periodic sync
     setupInteractionListeners();
   };
+
+  useEffect(() => {
+    initApp();
+  }, []);
+
+  useEffect(() => {
+    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
+    // Platform-specific API keys
+    const iosApiKey = "test_kLiUXhryqSAlaZnHHjWWJuFnuWo";
+    const androidApiKey = "test_kLiUXhryqSAlaZnHHjWWJuFnuWo";
+
+    if (Platform.OS === "ios") {
+      Purchases.configure({ apiKey: iosApiKey });
+    } else if (Platform.OS === "android") {
+      Purchases.configure({ apiKey: androidApiKey });
+    }
+
+    // Get offerings
+    Purchases.getOfferings().then((offerings) => {
+      console.log("Offerings:", offerings);
+    });
+  }, []);
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

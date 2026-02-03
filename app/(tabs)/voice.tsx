@@ -41,8 +41,8 @@ const LOADING_MESSAGES = [
 
 export default function VoiceInputScreen() {
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [fullTranscript, setFullTranscript] = useState("");
+  const [confirmedText, setConfirmedText] = useState("");
+  const [interimText, setInterimText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCreatingReminder, setIsCreatingReminder] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
@@ -55,14 +55,6 @@ export default function VoiceInputScreen() {
     null,
   );
 
-  // Helper to get last few words for display
-  const getLastFewWords = (text: string, wordCount: number = 5) => {
-    if (!text || text === "Listening...") return text;
-    const words = text.trim().split(/\s+/);
-    if (words.length <= wordCount) return text;
-    return "..." + words.slice(-wordCount).join(" ");
-  };
-
   // Auto-stop after 5 seconds of silence
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -72,12 +64,9 @@ export default function VoiceInputScreen() {
 
     if (isRecording) {
       silenceTimerRef.current = setTimeout(() => {
-        // Auto-stop recording after 5 seconds of no input
-        if (
-          isRecording &&
-          fullTranscript &&
-          fullTranscript !== "Listening..."
-        ) {
+        const fullText = (confirmedText + " " + interimText).trim();
+        // Auto-stop recording after 3 seconds of no input if there is text
+        if (isRecording && fullText && fullText !== "Listening...") {
           // Trigger stop recording
           setIsRecording(false);
           setIsProcessing(true);
@@ -96,47 +85,33 @@ export default function VoiceInputScreen() {
           setIsProcessing(false);
 
           // Create reminder from transcript
-          if (
-            fullTranscript &&
-            fullTranscript !== "Listening..." &&
-            createReminderRef.current
-          ) {
-            createReminderRef.current(fullTranscript);
+          if (createReminderRef.current) {
+            createReminderRef.current(fullText);
           }
         }
       }, 3000);
     }
-  }, [isRecording, fullTranscript]);
+  }, [isRecording, confirmedText, interimText]);
 
   // Use the speech recognition event hook
   useSpeechRecognitionEvent("result", (event) => {
     if (event.results && event.results.length > 0) {
       const latestResult = event.results[event.results.length - 1];
-      const text = latestResult.transcript.trim();
+      const text = latestResult.transcript;
 
       // Reset silence timer on any speech input
       resetSilenceTimer();
 
       if (event.isFinal) {
-        // Final result - append to existing transcript
-        setFullTranscript((prev) => {
-          const newText =
-            prev === "Listening..." || !prev ? text : `${prev} ${text}`;
-          setTranscript(getLastFewWords(newText));
-          return newText;
+        // Final result - append to confirmed text and clear interim
+        setConfirmedText((prev) => {
+          const newText = prev ? `${prev} ${text}` : text;
+          return newText.trim();
         });
+        setInterimText("");
       } else {
-        // Interim result - show as current text
-        setFullTranscript((prev) => {
-          let newText;
-          if (prev && prev !== "Listening..." && !prev.includes(text)) {
-            newText = `${prev} ${text}`;
-          } else {
-            newText = text || prev || "Listening...";
-          }
-          setTranscript(getLastFewWords(newText));
-          return newText;
-        });
+        // Interim result - show as interim text
+        setInterimText(text);
       }
     }
   });
@@ -203,25 +178,25 @@ export default function VoiceInputScreen() {
 
     // Show alert for critical errors
     if (event.error !== "no-speech") {
-      Alert.alert(errorTitle, errorMessage, [
-        {
-          text: "OK",
-          onPress: () => {
-            setTranscript("");
-          },
-        },
-      ]);
+      // Alert.alert(errorTitle, errorMessage, [
+      //   {
+      //     text: "OK",
+      //     onPress: () => {
+      //       setInterimText("");
+      //     },
+      //   },
+      // ]);
     } else {
       // For no-speech, just show a brief message
-      setTranscript("No speech detected. Try speaking again.");
+      setInterimText("No speech detected. Try speaking again.");
       setTimeout(() => {
-        setTranscript("");
+        setInterimText("");
       }, 3000);
     }
   });
 
   useSpeechRecognitionEvent("start", () => {
-    setTranscript("Listening...");
+    setInterimText("Listening...");
     setIsRecording(true);
   });
 
@@ -231,11 +206,15 @@ export default function VoiceInputScreen() {
       setIsRecording(false);
       setIsProcessing(false);
 
+      const fullText = (confirmedText + " " + interimText)
+        .replace("Listening...", "")
+        .trim();
+
       // If no transcript was captured, show message
-      if (!transcript || transcript === "Listening...") {
-        setTranscript("No speech detected");
+      if (!fullText) {
+        setInterimText("No speech detected");
         setTimeout(() => {
-          setTranscript("");
+          setInterimText("");
         }, 3000);
       }
     }
@@ -247,9 +226,9 @@ export default function VoiceInputScreen() {
     if (isRecording) {
       setIsRecording(false);
       setIsProcessing(false);
-      setTranscript("No speech detected. Try speaking again.");
+      setInterimText("No speech detected. Try speaking again.");
       setTimeout(() => {
-        setTranscript("");
+        setInterimText("");
       }, 3000);
     }
   });
@@ -284,7 +263,7 @@ export default function VoiceInputScreen() {
         success?: boolean;
       }>("/reminders/from-text", {
         method: "POST",
-        body: JSON.stringify({ text: text.trim() }),
+        body: JSON.stringify({ text: text.trim(), timezone: "Asia/Kolkata" }),
         useAuth: true,
       });
 
@@ -293,6 +272,7 @@ export default function VoiceInputScreen() {
       // check is response.success is true
       if (!response.success) {
         // show a dialog box with response.message
+        console.log("response", response);
         Alert.alert("Error", response.message);
         setIsCreatingReminder(false);
         return;
@@ -306,8 +286,8 @@ export default function VoiceInputScreen() {
 
       // Clear transcript after showing success
       setTimeout(() => {
-        setTranscript("");
-        setFullTranscript("");
+        setConfirmedText("");
+        setInterimText("");
         setSuccessMessage("");
         setShowConfetti(false);
       }, 3000);
@@ -327,15 +307,15 @@ export default function VoiceInputScreen() {
         errorMessage = error.message;
       }
 
-      Alert.alert(errorTitle, errorMessage, [
-        {
-          text: "OK",
-          onPress: () => {
-            setTranscript("");
-            setFullTranscript("");
-          },
-        },
-      ]);
+      // Alert.alert(errorTitle, errorMessage, [
+      //   {
+      //     text: "OK",
+      //     onPress: () => {
+      //       setTranscript("");
+      //       setFullTranscript("");
+      //     },
+      //   },
+      // ]);
     }
   }, []);
 
@@ -398,8 +378,8 @@ export default function VoiceInputScreen() {
             },
           ],
         );
-        setTranscript("Permission denied");
-        setTimeout(() => setTranscript(""), 2000);
+        setInterimText("Permission denied");
+        setTimeout(() => setInterimText(""), 2000);
         return;
       }
 
@@ -416,8 +396,8 @@ export default function VoiceInputScreen() {
         });
 
         setIsRecording(true);
-        setFullTranscript("Listening...");
-        setTranscript("Listening...");
+        setConfirmedText("");
+        setInterimText("Listening...");
 
         // Start silence timer
         resetSilenceTimer();
@@ -436,7 +416,7 @@ export default function VoiceInputScreen() {
         //   "Unable to start speech recognition. Please try again.",
         //   [{ text: "OK" }],
         // );
-        setTranscript("");
+        setInterimText("");
       }
     } catch (err: any) {
       console.error("Failed to start recording", err);
@@ -485,20 +465,19 @@ export default function VoiceInputScreen() {
       setIsProcessing(false);
 
       // Check if we have valid transcript to create reminder
-      const finalTranscript =
-        fullTranscript && fullTranscript !== "Listening..."
-          ? fullTranscript
-          : "";
+      const finalTranscript = (confirmedText + " " + interimText)
+        .replace("Listening...", "")
+        .trim();
 
       if (finalTranscript) {
         // Create reminder from transcript
         await createReminderFromText(finalTranscript);
       } else {
         // No speech detected
-        setTranscript("No speech detected");
-        setFullTranscript("");
+        setInterimText("No speech detected");
+        setConfirmedText("");
         setTimeout(() => {
-          setTranscript("");
+          setInterimText("");
         }, 3000);
       }
     } catch (err: any) {
@@ -508,7 +487,7 @@ export default function VoiceInputScreen() {
       setIsCreatingReminder(false);
       // Don't show alert for stop errors, just reset state
     }
-  }, [buttonScaleAnim, fullTranscript, createReminderFromText]);
+  }, [buttonScaleAnim, confirmedText, interimText, createReminderFromText]);
 
   const handlePress = useCallback(() => {
     if (isRecording) {
@@ -572,23 +551,25 @@ export default function VoiceInputScreen() {
             <View style={styles.successContainer}>
               <Text style={styles.successMessage}>{successMessage}</Text>
             </View>
-          ) : transcript ? (
+          ) : confirmedText || interimText ? (
             <View style={styles.transcriptWrapper}>
               <View style={styles.transcriptHeader}>
                 <Text style={styles.transcriptLabel}>
                   {isRecording
-                    ? "Listening..."
+                    ? interimText === "Listening..."
+                      ? "Listening..."
+                      : "Listening..."
                     : isProcessing
                       ? "Processing..."
                       : "Transcript"}
                 </Text>
                 {!isRecording &&
-                  transcript &&
-                  transcript !== "Listening..." && (
+                  (confirmedText || interimText) &&
+                  confirmedText + interimText !== "Listening..." && (
                     <Pressable
                       onPress={() => {
-                        setTranscript("");
-                        setFullTranscript("");
+                        setConfirmedText("");
+                        setInterimText("");
                       }}
                       style={styles.clearButton}
                     >
@@ -601,7 +582,9 @@ export default function VoiceInputScreen() {
                 contentContainerStyle={styles.transcriptContent}
                 showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.transcript}>{transcript}</Text>
+                <Text style={styles.transcript}>
+                  {(confirmedText + " " + interimText).trim()}
+                </Text>
               </ScrollView>
             </View>
           ) : (

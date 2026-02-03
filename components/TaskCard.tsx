@@ -75,7 +75,7 @@ export function TaskCard({
       top: 0,
       bottom: "50%",
       width: 1,
-      backgroundColor: "#CBD5E1",
+      backgroundColor: isDark ? "#334155" : "#CBD5E1",
     },
     timelineLineBottom: {
       position: "absolute",
@@ -83,7 +83,7 @@ export function TaskCard({
       bottom: 0,
       width: 1,
       height: 100,
-      backgroundColor: "#CBD5E1",
+      backgroundColor: isDark ? "#334155" : "#CBD5E1",
     },
     activeDot: {
       width: 16,
@@ -108,7 +108,7 @@ export function TaskCard({
       height: 14,
       borderRadius: 7,
       borderWidth: 1,
-      borderColor: "#CBD5E1",
+      borderColor: isDark ? "#334155" : "#CBD5E1",
       backgroundColor: "transparent",
     },
     gradientBorderContainer: {
@@ -130,7 +130,9 @@ export function TaskCard({
       flex: 1,
     },
     card: {
-      backgroundColor: "rgba(255,255,255,0.7)",
+      backgroundColor: isDark
+        ? "rgba(30, 41, 59, 0.5)"
+        : "rgba(255,255,255,0.7)",
     },
     cardHeader: {
       marginBottom: 8,
@@ -143,7 +145,7 @@ export function TaskCard({
     },
     cardDesc: {
       fontSize: 14,
-      color: "#64748B",
+      color: isDark ? "#CBD5E1" : "#64748B",
       marginBottom: 16,
       lineHeight: 20,
       fontWeight: "400",
@@ -155,21 +157,21 @@ export function TaskCard({
     },
     timeText: {
       fontSize: 16,
-      color: "#1e293b",
+      color: isDark ? Colors.dark.text : "#1e293b",
       fontWeight: "600",
     },
     visitBtn: {
-      backgroundColor: "#f8fafc",
+      backgroundColor: isDark ? "#1e293b" : "#f8fafc",
       paddingHorizontal: 24,
       paddingVertical: 10,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: "#f1f5f9",
+      borderColor: isDark ? "#334155" : "#f1f5f9",
     },
     visitText: {
       fontSize: 12,
       fontWeight: "bold",
-      color: "#64748B",
+      color: isDark ? "#94A3B8" : "#64748B",
       letterSpacing: 1,
     },
     // Image Card Styles
@@ -187,7 +189,9 @@ export function TaskCard({
       padding: 10,
     },
     imageTextContainer: {
-      backgroundColor: "rgba(255,255,255,0.9)",
+      backgroundColor: isDark
+        ? "rgba(15, 23, 42, 0.9)"
+        : "rgba(255,255,255,0.9)",
       borderRadius: 20,
       padding: 16,
       shadowColor: "#000",
@@ -199,7 +203,7 @@ export function TaskCard({
     imageTitle: {
       fontSize: 18,
       fontWeight: "600",
-      color: "#1e293b",
+      color: isDark ? Colors.dark.text : "#1e293b",
     },
     tagRow: {
       flexDirection: "row",
@@ -208,13 +212,13 @@ export function TaskCard({
     },
     tagText: {
       fontSize: 14,
-      color: "#64748B",
+      color: isDark ? "#94A3B8" : "#64748B",
       marginLeft: 6,
       fontWeight: "500",
     },
     imageDesc: {
       fontSize: 14,
-      color: "#64748B",
+      color: isDark ? "#94A3B8" : "#64748B",
       marginBottom: 12,
       lineHeight: 20,
     },
@@ -266,62 +270,6 @@ export function TaskCard({
     </View>
   );
 
-  if (image) {
-    return (
-      <View style={styles.wrapper}>
-        {/* {renderTimeline()} */}
-        <View style={styles.cardContainer}>
-          <GradientBorder>
-            <GlassCard style={styles.imageCard} intensity={20}>
-              <ImageBackground
-                source={image}
-                style={styles.imageBg}
-                imageStyle={{ borderRadius: 24 }}
-              >
-                <View style={styles.imageContent}>
-                  <View style={styles.imageTextContainer}>
-                    <Text style={styles.imageTitle}>{title}</Text>
-                    <View style={styles.tagRow}>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={14}
-                        color={Colors.palette.mint}
-                      />
-                      <Text style={styles.tagText}>Home Guide</Text>
-                    </View>
-                    <Text style={styles.imageDesc} numberOfLines={2}>
-                      {description}
-                    </Text>
-
-                    <View style={styles.bottomRow}>
-                      <View style={styles.timeRow}>
-                        <Ionicons
-                          name="time-outline"
-                          size={16}
-                          color="#475569"
-                        />
-                        <Text style={styles.timeText}>{time}</Text>
-                      </View>
-                      <Switch
-                        value={isOn}
-                        onValueChange={onToggle}
-                        trackColor={{
-                          false: "#e2e8f0",
-                          true: Colors.palette.skyBlue,
-                        }}
-                        thumbColor={"#fff"}
-                      />
-                    </View>
-                  </View>
-                </View>
-              </ImageBackground>
-            </GlassCard>
-          </GradientBorder>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.wrapper}>
       {/* {renderTimeline()} */}
@@ -333,24 +281,30 @@ export function TaskCard({
                 {title}
               </Text>
             </View>
-            {/* {description && (
+            {description && (
               <Text style={styles.cardDesc} numberOfLines={3}>
                 {description}
               </Text>
-            )} */}
+            )}
             {frequency && (
               <View style={styles.localFlex}>
                 {frequency === "daily" ? (
-                  <Feather name="repeat" size={16} color="green" />
+                  <Feather
+                    name="repeat"
+                    size={16}
+                    color={isDark ? Colors.palette.mint : "green"}
+                  />
                 ) : frequency === "once" ? (
                   <MaterialCommunityIcons
                     name="calendar-multiselect"
                     size={18}
-                    color="#3B0069"
+                    color={isDark ? Colors.palette.lavender : "#3B0069"}
                   />
                 ) : null}
                 <Text
-                  className="text-lg font-normal text-gray-500"
+                  className={`text-lg font-normal ${
+                    isDark ? "text-slate-300" : "text-gray-500"
+                  }`}
                   numberOfLines={1}
                 >
                   {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
@@ -362,7 +316,11 @@ export function TaskCard({
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
               >
-                <MaterialIcons name="access-alarm" size={18} color="#475569" />
+                <MaterialIcons
+                  name="access-alarm"
+                  size={18}
+                  color={isDark ? Colors.palette.skyBlue : "#475569"}
+                />
                 <Text style={styles.timeText}>{time}</Text>
               </View>
 
@@ -375,7 +333,10 @@ export function TaskCard({
               <Switch
                 value={isOn}
                 onValueChange={onToggle}
-                trackColor={{ false: "#e2e8f0", true: Colors.palette.skyBlue }}
+                trackColor={{
+                  false: isDark ? "#334155" : "#e2e8f0",
+                  true: Colors.palette.skyBlue,
+                }}
                 thumbColor={"#fff"}
               />
             </View>

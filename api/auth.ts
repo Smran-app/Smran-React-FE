@@ -68,7 +68,6 @@ export const loginWithBackend = async (
       }),
     },
   };
-  console.log(payload);
   const endpoint = provider === "google" ? "/auth/google" : "/auth/apple";
 
   return apiClient<AuthResponse>(endpoint, {

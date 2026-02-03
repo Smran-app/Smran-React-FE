@@ -16,16 +16,29 @@ import { TaskCard } from "@/components/TaskCard"; // Maybe reuse or create new s
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Colors } from "@/constants/Colors";
+import { useAppTheme } from "@/context/ThemeContext";
 
-// Simplified Card for Manage List? Or Resuse TaskCard?
-// User said "There will be just list of reinders no need of grouping based on date."
-// TaskCard is quite specific to the timeline view (has line connectors).
-// I should probably make a simpler list item or adapt TaskCard.
-// For now, I will create a local ListItem component effectively, or a new component if complex.
-// Let's create a local component first for simplicity as requested "UI Good with edit delete options".
+const convertDateToMMDD = (date: string) => {
+  const dateObj = new Date(date);
+  return dateObj.toLocaleDateString([], {
+    month: "2-digit",
+    day: "2-digit",
+  });
+};
+
+// const convertAnyTimeOfDayToHHMM because sometimes it is returning HH:MM:SS and sometimes HH:MM
+const convertAnyTimeOfDayToHHMM = (time_of_day: string) => {
+  const dateObj = new Date(`2000-01-01T${time_of_day}:00`);
+  return dateObj.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 export default function ManageScreen() {
   const router = useRouter();
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   const { reminders, isLoading, fetchAllReminders, deleteReminder } =
     useReminderStore();
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
@@ -71,19 +84,81 @@ export default function ManageScreen() {
     let timeStr = "";
     if (time_of_day) {
       try {
-        timeStr = new Date(`2000-01-01T${time_of_day}:00`).toLocaleTimeString(
-          [],
-          {
-            hour: "numeric",
-            minute: "2-digit",
-          },
-        );
+        timeStr = convertAnyTimeOfDayToHHMM(time_of_day);
       } catch (e) {
         timeStr = time_of_day;
       }
     }
-    return `${frequency} ${timeStr}`; // Simplified for manage view
+    return `${frequency} ${time_of_day} ${frequency === "once" ? `on ${convertDateToMMDD(start_datetime)}` : ""}`; // Simplified for manage view
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop: 60,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    screenTitle: {
+      fontSize: 22,
+      fontWeight: "600",
+      marginVertical: 15,
+    },
+    listContent: {
+      paddingBottom: 100,
+    },
+    cardContainer: {
+      backgroundColor: isDark ? "#1e293b" : "#F1F5F9",
+      borderRadius: 16,
+      marginBottom: 12,
+      padding: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: "#F1F5F9",
+    },
+    cardContent: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    textContainer: {
+      flex: 1,
+      marginRight: 10,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: isDark ? "#F1F5F9" : "#1e293b",
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 13,
+      color: isDark ? "#F1F5F9" : "#64748b",
+    },
+    actions: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    actionBtn: {
+      padding: 8,
+      backgroundColor: "#F8FAFC",
+      borderRadius: 8,
+    },
+    emptyContainer: {
+      alignItems: "center",
+      marginTop: 50,
+    },
+    emptyText: {
+      color: "#94a3b8",
+      fontSize: 16,
+    },
+  });
 
   const renderItem = ({ item }: { item: Reminder }) => {
     return (
@@ -118,7 +193,12 @@ export default function ManageScreen() {
     <ScreenWrapper style={styles.container}>
       <Header userDetails={userDetails} />
       <View style={styles.content}>
-        <Text style={styles.screenTitle}>Manage Reminders</Text>
+        <Text
+          style={styles.screenTitle}
+          className={`${isDark ? "text-white" : "#334155"}`}
+        >
+          Manage Reminders
+        </Text>
 
         {isLoading && reminders.length === 0 ? (
           <ActivityIndicator
@@ -144,72 +224,3 @@ export default function ManageScreen() {
     </ScreenWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 60,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#334155",
-    marginVertical: 15,
-  },
-  listContent: {
-    paddingBottom: 100,
-  },
-  cardContainer: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    marginBottom: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
-  },
-  cardContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 10,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#64748b",
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  actionBtn: {
-    padding: 8,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 8,
-  },
-  emptyContainer: {
-    alignItems: "center",
-    marginTop: 50,
-  },
-  emptyText: {
-    color: "#94a3b8",
-    fontSize: 16,
-  },
-});

@@ -48,7 +48,7 @@ export const getReminderProfiles = async (): Promise<
  * Create a new reminder profile
  */
 export const createReminderProfile = async (
-  payload: CreateReminderProfilePayload
+  payload: CreateReminderProfilePayload,
 ): Promise<ReminderProfileResponse> => {
   return apiClient<ReminderProfileResponse>("/reminder-profiles/", {
     method: "POST",
@@ -62,7 +62,7 @@ export const createReminderProfile = async (
  */
 export const updateReminderProfile = async (
   id: string,
-  payload: UpdateReminderProfilePayload
+  payload: UpdateReminderProfilePayload,
 ): Promise<ReminderProfileResponse> => {
   return apiClient<ReminderProfileResponse>(`/reminder-profiles/${id}`, {
     method: "PUT",

@@ -17,6 +17,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useOnboarding } from "./contexts/OnboardingContext";
 import { submitOnboarding } from "@/api/onboarding";
 import logo from "@/assets/adaptive-icon.png";
+import { useAppTheme } from "@/context/ThemeContext";
+import { Colors } from "@/constants/Colors";
 const { width, height } = Dimensions.get("window");
 
 type OnboardingData = {
@@ -93,12 +95,13 @@ function getOptionLabel(questionIndex: number, optionId: string): string {
 }
 
 export default function OnboardingScreen() {
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   const router = useRouter();
   const { completeOnboarding } = useOnboarding();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const animValue = useRef(new Animated.Value(0)).current;
 
   const [data, setData] = useState<OnboardingData>({
     forgetTypes: [],
@@ -140,7 +143,6 @@ export default function OnboardingScreen() {
   };
 
   const goToNext = async () => {
-    console.log("Current onboarding data:", data, currentIndex);
     if (currentIndex < questions.length - 1) {
       const nextIndex = currentIndex + 1;
       scrollViewRef.current?.scrollTo({ x: width * nextIndex, animated: true });
@@ -224,33 +226,64 @@ export default function OnboardingScreen() {
   const renderWelcome = () => (
     <View style={styles.pageContainer}>
       <LinearGradient
-        colors={["#FFE5E5", "#E5F0FF", "#F0E5FF"]}
+        colors={
+          isDark
+            ? [Colors.dark.background, "#1e293b", "#0f172a"]
+            : ["#FFE5E5", "#E5F0FF", "#F0E5FF"]
+        }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
       />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.contentCenter}>
-          <View style={styles.lotusContainer}>
+          <View
+            style={[
+              styles.lotusContainer,
+              isDark && {
+                backgroundColor: Colors.dark.glass,
+                borderColor: Colors.dark.glassBorder,
+                borderWidth: 1,
+              },
+            ]}
+          >
             <Image source={logo} style={{ width: 100, height: 100 }} />
           </View>
-          <Text style={styles.welcomeTitle}>Welcome to Smran</Text>
-          <Text style={styles.welcomeSubtitle}>
+          <Text
+            style={[styles.welcomeTitle, isDark && { color: Colors.dark.text }]}
+          >
+            Welcome to Smran
+          </Text>
+          <Text
+            style={[styles.welcomeSubtitle, isDark && { color: "#94A3B8" }]}
+          >
             Your intelligent reminder companion{"\n"}
             powered by voice and synced everywhere
           </Text>
-          <Text style={styles.welcomeDescription}>
+          <Text
+            style={[styles.welcomeDescription, isDark && { color: "#64748B" }]}
+          >
             Let's personalize your experience{"\n"}
             to help you remember what matters
           </Text>
         </View>
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={[
+              styles.primaryButton,
+              isDark && { backgroundColor: Colors.dark.tint },
+            ]}
             onPress={goToNext}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryButtonText}>Get Started</Text>
+            <Text
+              style={[
+                styles.primaryButtonText,
+                isDark && { color: Colors.dark.background },
+              ]}
+            >
+              Get Started
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -260,7 +293,12 @@ export default function OnboardingScreen() {
   const renderQuestion = (questionIndex: number) => {
     const question = questions[questionIndex];
     return (
-      <View style={styles.pageContainer}>
+      <View
+        style={[
+          styles.pageContainer,
+          isDark && { backgroundColor: Colors.dark.background },
+        ]}
+      >
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerSection}>
             <View style={styles.progressContainer}>
@@ -269,13 +307,27 @@ export default function OnboardingScreen() {
                   key={idx}
                   style={[
                     styles.progressDot,
+                    isDark && { backgroundColor: "#334155" },
                     currentIndex >= idx + 1 && styles.progressDotActive,
+                    currentIndex >= idx + 1 &&
+                      isDark && { backgroundColor: Colors.dark.tint },
                   ]}
                 />
               ))}
             </View>
-            <Text style={styles.questionTitle}>{question.title}</Text>
-            <Text style={styles.questionSubtitle}>{question.subtitle}</Text>
+            <Text
+              style={[
+                styles.questionTitle,
+                isDark && { color: Colors.dark.text },
+              ]}
+            >
+              {question.title}
+            </Text>
+            <Text
+              style={[styles.questionSubtitle, isDark && { color: "#94A3B8" }]}
+            >
+              {question.subtitle}
+            </Text>
           </View>
 
           <ScrollView
@@ -290,7 +342,12 @@ export default function OnboardingScreen() {
                   key={option.id}
                   style={[
                     styles.optionCard,
+                    isDark && {
+                      backgroundColor: "#1e293b",
+                      borderColor: "rgba(255, 255, 255, 0.05)",
+                    },
                     selected && styles.optionCardSelected,
+                    selected && isDark && { borderColor: Colors.dark.tint },
                   ]}
                   onPress={() => handleSelection(questionIndex, option.id)}
                   activeOpacity={0.7}
@@ -300,15 +357,29 @@ export default function OnboardingScreen() {
                     <Text
                       style={[
                         styles.optionLabel,
+                        isDark && { color: "#CBD5E1" },
                         selected && styles.optionLabelSelected,
+                        selected && isDark && { color: "white" },
                       ]}
                     >
                       {option.label}
                     </Text>
                   </View>
                   {selected && (
-                    <View style={styles.checkmark}>
-                      <Text style={styles.checkmarkText}>✓</Text>
+                    <View
+                      style={[
+                        styles.checkmark,
+                        isDark && { backgroundColor: Colors.dark.tint },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.checkmarkText,
+                          isDark && { color: Colors.dark.background },
+                        ]}
+                      >
+                        ✓
+                      </Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -320,16 +391,26 @@ export default function OnboardingScreen() {
             <TouchableOpacity
               style={[
                 styles.primaryButton,
+                isDark && { backgroundColor: Colors.dark.tint },
                 (!canProceed() || isSubmitting) && styles.primaryButtonDisabled,
+                isDark &&
+                  !canProceed() && { backgroundColor: "#1e293b", opacity: 0.5 },
               ]}
               onPress={goToNext}
               activeOpacity={0.8}
               disabled={!canProceed() || isSubmitting}
             >
               {isSubmitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator
+                  color={isDark ? Colors.dark.background : "#FFFFFF"}
+                />
               ) : (
-                <Text style={styles.primaryButtonText}>
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    isDark && { color: Colors.dark.background },
+                  ]}
+                >
                   {currentIndex === questions.length - 1
                     ? "Finish"
                     : "Continue"}
@@ -343,7 +424,12 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        isDark && { backgroundColor: Colors.dark.background },
+      ]}
+    >
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -367,7 +453,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 30,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.light.background,
   },
   page: {
     width,
@@ -419,7 +505,7 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 36,
     fontWeight: "700",
-    color: "#1F2937",
+    color: Colors.light.text,
     textAlign: "center",
     marginBottom: 16,
     letterSpacing: -0.5,
@@ -462,7 +548,7 @@ const styles = StyleSheet.create({
   questionTitle: {
     fontSize: 26,
     fontWeight: "700",
-    color: "#1F2937",
+    color: Colors.light.text,
     marginBottom: 8,
     lineHeight: 34,
   },
@@ -534,7 +620,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 36,
+    paddingBottom: 48,
     paddingTop: 16,
   },
   primaryButton: {

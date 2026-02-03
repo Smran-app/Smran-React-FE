@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import {
   Plus,
   Settings2,
@@ -6,6 +6,7 @@ import {
   Bell,
   Clock,
   Smartphone,
+  ChevronLeft,
 } from "lucide-react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -18,6 +19,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import {
   getReminderProfiles,
@@ -27,7 +29,11 @@ import {
   CreateReminderProfilePayload,
 } from "@/api/reminder-profiles";
 import { getCurrentUser } from "@/api/auth";
-
+import { ScreenWrapper } from "@/components/ScreenWrapper";
+import { useAppTheme } from "@/context/ThemeContext";
+import { Colors } from "@/constants/Colors";
+import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
 interface Device {
   id: string;
   name: string;
@@ -92,6 +98,9 @@ function isApiProfileId(id: string): boolean {
 }
 
 export default function ReminderProfileScreen() {
+  const { colorScheme } = useAppTheme();
+  const router = useRouter();
+  const isDark = colorScheme === "dark";
   const [profiles, setProfiles] = useState<ReminderProfile[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,15 +212,33 @@ export default function ReminderProfileScreen() {
 
   const canDeleteProfile = editingProfile && !isApiProfileId(editingProfile.id);
 
+  const handleGoBack = () => {
+    router.back();
+  };
+
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Reminder Profiles</Text>
-        <Text style={styles.subtitle}>Customize notification settings</Text>
+    <ScreenWrapper style={styles.container}>
+      <View style={styles.header} className="flex flex-row items-center gap-2">
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={isDark ? Colors.dark.text : "#1e293b"}
+          />
+        </TouchableOpacity>
+        <View className="flex flex-col">
+          <Text
+            className={`text-3xl font-medium ${isDark ? "text-white" : "text-black"}`}
+          >
+            Reminder Profiles
+          </Text>
+          <Text
+            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+          >
+            Customize notification settings
+          </Text>
+        </View>
       </View>
-
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -226,18 +253,46 @@ export default function ReminderProfileScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Your Profiles</Text>
               <Pressable
-                style={styles.addButton}
+                style={[
+                  styles.addButton,
+                  isDark && {
+                    backgroundColor: "rgba(255, 255, 255, 0.05)",
+                    borderColor: "rgba(255, 255, 255, 0.1)",
+                  },
+                ]}
                 onPress={handleCreateCustomProfile}
               >
-                <Plus size={20} color="#1F2937" strokeWidth={2} />
-                <Text style={styles.addButtonText}>Add</Text>
+                <Plus
+                  size={20}
+                  color={isDark ? Colors.dark.text : "#1F2937"}
+                  strokeWidth={2}
+                />
+                <Text
+                  style={[
+                    styles.addButtonText,
+                    isDark && { color: Colors.dark.text },
+                  ]}
+                >
+                  Add
+                </Text>
               </Pressable>
             </View>
 
             {profiles.length === 0 ? (
               <View style={styles.emptyState}>
-                <Settings2 size={48} color="#D1D5DB" strokeWidth={1.5} />
-                <Text style={styles.emptyText}>No reminder profiles yet</Text>
+                <Settings2
+                  size={48}
+                  color={isDark ? "#475569" : "#D1D5DB"}
+                  strokeWidth={1.5}
+                />
+                <Text
+                  style={[
+                    styles.emptyText,
+                    isDark && { color: Colors.dark.text },
+                  ]}
+                >
+                  No reminder profiles yet
+                </Text>
                 <Text style={styles.emptySubtext}>
                   Tap "Add" to create your first profile
                 </Text>
@@ -261,15 +316,31 @@ export default function ReminderProfileScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <View
+          style={[
+            styles.modalContainer,
+            isDark && { backgroundColor: Colors.dark.background },
+          ]}
+        >
+          <View
+            style={[
+              styles.modalHeader,
+              isDark && { borderBottomColor: "rgba(255, 255, 255, 0.1)" },
+            ]}
+          >
             <Pressable
               onPress={() => setModalVisible(false)}
               style={styles.modalCloseButton}
             >
-              <Text style={styles.modalCloseText}>Cancel</Text>
+              <Text
+                style={[styles.modalCloseText, isDark && { color: "#94A3B8" }]}
+              >
+                Cancel
+              </Text>
             </Pressable>
-            <Text style={styles.modalTitle}>
+            <Text
+              style={[styles.modalTitle, isDark && { color: Colors.dark.text }]}
+            >
               {isApiProfileId(editingProfile?.id ?? "")
                 ? "Edit Profile"
                 : "New Profile"}
@@ -289,41 +360,72 @@ export default function ReminderProfileScreen() {
 
           <ScrollView style={styles.modalContent}>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Profile Name</Text>
+              <Text style={[styles.label, isDark && { color: "#94A3B8" }]}>
+                Profile Name
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255,255,255,0.1)",
+                    color: Colors.dark.text,
+                  },
+                ]}
                 value={editingProfile?.name ?? ""}
                 onChangeText={(text) =>
                   editingProfile &&
                   setEditingProfile({ ...editingProfile, name: text })
                 }
                 placeholder="Enter profile name"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
               />
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Description (optional)</Text>
+              <Text style={[styles.label, isDark && { color: "#94A3B8" }]}>
+                Description (optional)
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255,255,255,0.1)",
+                    color: Colors.dark.text,
+                  },
+                ]}
                 value={editingProfile?.description ?? ""}
                 onChangeText={(text) =>
                   editingProfile &&
                   setEditingProfile({ ...editingProfile, description: text })
                 }
                 placeholder="e.g. For important reminders"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
               />
             </View>
 
             <View style={styles.formGroup}>
               <View style={styles.labelRow}>
-                <Bell size={20} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.label}>Notify Before</Text>
+                <Bell
+                  size={20}
+                  color={isDark ? "#60A5FA" : "#6B7280"}
+                  strokeWidth={2}
+                />
+                <Text style={[styles.label, isDark && { color: "#94A3B8" }]}>
+                  Notify Before
+                </Text>
               </View>
               <View style={styles.inputRow}>
                 <TextInput
-                  style={styles.numberInput}
+                  style={[
+                    styles.numberInput,
+                    isDark && {
+                      backgroundColor: "#1e293b",
+                      borderColor: "rgba(255,255,255,0.1)",
+                      color: Colors.dark.text,
+                    },
+                  ]}
                   value={editingProfile?.notifyBefore.toString() ?? ""}
                   onChangeText={(text) =>
                     editingProfile &&
@@ -334,20 +436,35 @@ export default function ReminderProfileScreen() {
                   }
                   keyboardType="number-pad"
                   placeholder="0"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                 />
-                <Text style={styles.unit}>minutes</Text>
+                <Text style={[styles.unit, isDark && { color: "#64748B" }]}>
+                  minutes
+                </Text>
               </View>
             </View>
 
             <View style={styles.formGroup}>
               <View style={styles.labelRow}>
-                <Clock size={20} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.label}>Snooze Duration</Text>
+                <Clock
+                  size={20}
+                  color={isDark ? "#60A5FA" : "#6B7280"}
+                  strokeWidth={2}
+                />
+                <Text style={[styles.label, isDark && { color: "#94A3B8" }]}>
+                  Snooze Duration
+                </Text>
               </View>
               <View style={styles.inputRow}>
                 <TextInput
-                  style={styles.numberInput}
+                  style={[
+                    styles.numberInput,
+                    isDark && {
+                      backgroundColor: "#1e293b",
+                      borderColor: "rgba(255,255,255,0.1)",
+                      color: Colors.dark.text,
+                    },
+                  ]}
                   value={editingProfile?.snoozeDuration.toString() ?? ""}
                   onChangeText={(text) =>
                     editingProfile &&
@@ -358,21 +475,33 @@ export default function ReminderProfileScreen() {
                   }
                   keyboardType="number-pad"
                   placeholder="0"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                 />
-                <Text style={styles.unit}>minutes</Text>
+                <Text style={[styles.unit, isDark && { color: "#64748B" }]}>
+                  minutes
+                </Text>
               </View>
             </View>
 
             <View style={styles.formGroup}>
               <View style={styles.labelRow}>
-                <Smartphone size={20} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.label}>Notify On</Text>
+                <Smartphone
+                  size={20}
+                  color={isDark ? "#60A5FA" : "#6B7280"}
+                  strokeWidth={2}
+                />
+                <Text style={[styles.label, isDark && { color: "#94A3B8" }]}>
+                  Notify On
+                </Text>
               </View>
               <View style={styles.radioGroup}>
                 <Pressable
                   style={[
                     styles.radioOption,
+                    isDark && {
+                      backgroundColor: "#1e293b",
+                      borderColor: "rgba(255, 255, 255, 0.05)",
+                    },
                     editingProfile?.notifyOn === "all" &&
                       styles.radioOptionSelected,
                   ]}
@@ -387,7 +516,14 @@ export default function ReminderProfileScreen() {
                     )}
                   </View>
                   <View>
-                    <Text style={styles.radioLabel}>All Devices</Text>
+                    <Text
+                      style={[
+                        styles.radioLabel,
+                        isDark && { color: Colors.dark.text },
+                      ]}
+                    >
+                      All Devices
+                    </Text>
                     <Text style={styles.radioDescription}>
                       Notify on this and all synced devices
                     </Text>
@@ -397,6 +533,10 @@ export default function ReminderProfileScreen() {
                 <Pressable
                   style={[
                     styles.radioOption,
+                    isDark && {
+                      backgroundColor: "#1e293b",
+                      borderColor: "rgba(255, 255, 255, 0.05)",
+                    },
                     editingProfile?.notifyOn === "other" &&
                       styles.radioOptionSelected,
                   ]}
@@ -411,7 +551,14 @@ export default function ReminderProfileScreen() {
                     )}
                   </View>
                   <View>
-                    <Text style={styles.radioLabel}>Other Devices Only</Text>
+                    <Text
+                      style={[
+                        styles.radioLabel,
+                        isDark && { color: Colors.dark.text },
+                      ]}
+                    >
+                      Other Devices Only
+                    </Text>
                     <Text style={styles.radioDescription}>
                       Notify on other saved devices only
                     </Text>
@@ -422,8 +569,14 @@ export default function ReminderProfileScreen() {
 
             <View style={styles.formGroup}>
               <View style={styles.labelRow}>
-                <Smartphone size={20} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.label}>Preferred Devices</Text>
+                <Smartphone
+                  size={20}
+                  color={isDark ? "#60A5FA" : "#6B7280"}
+                  strokeWidth={2}
+                />
+                <Text style={[styles.label, isDark && { color: "#94A3B8" }]}>
+                  Preferred Devices
+                </Text>
               </View>
               <Text style={styles.helperText}>
                 Select specific devices to receive notifications
@@ -438,6 +591,10 @@ export default function ReminderProfileScreen() {
                       key={device.id}
                       style={[
                         styles.deviceOption,
+                        isDark && {
+                          backgroundColor: "#1e293b",
+                          borderColor: "rgba(255, 255, 255, 0.05)",
+                        },
                         isSelected && styles.deviceOptionSelected,
                       ]}
                       onPress={() => toggleDevice(device.id)}
@@ -445,7 +602,14 @@ export default function ReminderProfileScreen() {
                       <View style={styles.checkbox}>
                         {isSelected && <View style={styles.checkboxInner} />}
                       </View>
-                      <Text style={styles.deviceName}>{device.name}</Text>
+                      <Text
+                        style={[
+                          styles.deviceName,
+                          isDark && { color: Colors.dark.text },
+                        ]}
+                      >
+                        {device.name}
+                      </Text>
                       <Text style={styles.deviceType}>
                         {device.type.charAt(0).toUpperCase() +
                           device.type.slice(1)}
@@ -467,7 +631,7 @@ export default function ReminderProfileScreen() {
           </ScrollView>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
@@ -477,27 +641,54 @@ interface ProfileCardProps {
 }
 
 function ProfileCard({ profile, onPress }: ProfileCardProps) {
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   return (
-    <Pressable style={styles.profileCard} onPress={onPress}>
+    <Pressable
+      style={[
+        styles.profileCard,
+        isDark && {
+          backgroundColor: "#1e293b",
+          borderColor: "rgba(255, 255, 255, 0.05)",
+        },
+      ]}
+      onPress={onPress}
+    >
       <View style={styles.profileHeader}>
-        <Text style={styles.profileName}>{profile.name}</Text>
+        <Text
+          style={[styles.profileName, isDark && { color: Colors.dark.text }]}
+        >
+          {profile.name}
+        </Text>
         <ChevronRight size={20} color="#9CA3AF" strokeWidth={2} />
       </View>
       <View style={styles.profileDetails}>
         <View style={styles.detailItem}>
-          <Bell size={14} color="#6B7280" strokeWidth={2} />
+          <Bell
+            size={14}
+            color={isDark ? "#60A5FA" : "#6B7280"}
+            strokeWidth={2}
+          />
           <Text style={styles.detailText}>
             {profile.notifyBefore} min before
           </Text>
         </View>
         <View style={styles.detailItem}>
-          <Clock size={14} color="#6B7280" strokeWidth={2} />
+          <Clock
+            size={14}
+            color={isDark ? "#60A5FA" : "#6B7280"}
+            strokeWidth={2}
+          />
           <Text style={styles.detailText}>
             {profile.snoozeDuration} min snooze
           </Text>
         </View>
         <View style={styles.detailItem}>
-          <Smartphone size={14} color="#6B7280" strokeWidth={2} />
+          <Smartphone
+            size={14}
+            color={isDark ? "#60A5FA" : "#6B7280"}
+            strokeWidth={2}
+          />
           <Text style={styles.detailText}>
             {profile.notifyOn === "all" ? "All devices" : "Other devices"}
             {profile.preferredDevices?.length > 0 &&
@@ -512,19 +703,31 @@ function ProfileCard({ profile, onPress }: ProfileCardProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: Colors.light.background,
+  },
+  backButton: {
+    padding: 4,
   },
   header: {
     paddingTop: 70,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingBottom: 24,
+  },
+  glassView: {
+    // position: "absolute",
+    // top: 100,
+    // left: 50,
+    // width: 200,
+    // height: 100,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    // padding: 20,
   },
   title: {
     fontSize: 36,
-    fontWeight: "300" as const,
-    color: "#1F2937",
-    letterSpacing: 1,
-    marginBottom: 4,
+    fontWeight: 400,
+    color: Colors.light.text,
   },
   subtitle: {
     fontSize: 14,

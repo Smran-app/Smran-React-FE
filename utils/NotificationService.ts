@@ -147,10 +147,10 @@ class NotificationService {
       // Fix: Safely access properties on union type
       if (trigger) {
         if ("type" in trigger) {
-          console.log("Trigger Type:", (trigger as any).type);
+          // console.log("Trigger Type:", (trigger as any).type);
         }
         if ("value" in trigger) {
-          console.log("Date Time:", new Date((trigger as any).value));
+          // console.log("Date Time:", new Date((trigger as any).value));
         }
       }
     });

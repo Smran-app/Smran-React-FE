@@ -20,6 +20,9 @@ import {
 import * as AppleAuthentication from "expo-apple-authentication";
 import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import * as SecureStore from "expo-secure-store";
+import { useAppTheme } from "@/context/ThemeContext";
+import { Colors } from "@/constants/Colors";
+
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_WEB_ID,
   scopes: ["profile", "email"], // what API you want to access on behalf of the user, default is email and profile
@@ -31,6 +34,8 @@ GoogleSignin.configure({
 import { loginWithBackend } from "@/api/auth";
 
 export default function Login() {
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   const router = useRouter();
 
   const handleLogin = () => {
@@ -58,7 +63,7 @@ export default function Login() {
         provider,
         deviceToken || "unknown_device_token",
       );
-      // console.log(`${provider} Login Success:`, data);
+      console.log(`${provider} Login Success:`, data);
       await SecureStore.setItemAsync("access", data.access_token);
       await SecureStore.setItemAsync("device_id", data.device?.id || "");
       if (data.is_onboarding_completed === false) {
@@ -112,17 +117,30 @@ export default function Login() {
     }
   };
   return (
-    <ScreenWrapper style={styles.container}>
-      <StatusBar style="dark" />
+    <ScreenWrapper
+      style={[
+        styles.container,
+        isDark && { backgroundColor: Colors.dark.background },
+      ]}
+    >
+      <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image source={logo} style={styles.logoIcon} />
-          <Text style={styles.logoText}>Smran</Text>
+          <Text
+            style={[styles.logoText, isDark && { color: Colors.dark.text }]}
+          >
+            Smran
+          </Text>
         </View>
 
         <View style={styles.middleContainer}>
-          <Text style={styles.headline}>Welcome back,</Text>
-          <Text style={styles.subHeadline}>
+          <Text
+            style={[styles.headline, isDark && { color: Colors.dark.text }]}
+          >
+            Welcome back,
+          </Text>
+          <Text style={[styles.subHeadline, isDark && { color: "#94A3B8" }]}>
             Sign in to continue using Smran
           </Text>
         </View>
@@ -177,16 +195,29 @@ export default function Login() {
           /> */}
 
           <TouchableOpacity
-            style={[styles.button, styles.googleButton]}
+            style={[
+              styles.button,
+              styles.googleButton,
+              isDark && {
+                backgroundColor: "#1e293b",
+                borderColor: "rgba(255, 255, 255, 0.1)",
+              },
+            ]}
             onPress={googleSignIn}
           >
             <Ionicons
               name="logo-google"
               size={24}
-              color="black"
+              color={isDark ? "white" : "black"}
               style={styles.buttonIcon}
             />
-            <Text style={[styles.buttonText, styles.googleButtonText]}>
+            <Text
+              style={[
+                styles.buttonText,
+                styles.googleButtonText,
+                isDark && { color: "white" },
+              ]}
+            >
               Continue with Google
             </Text>
           </TouchableOpacity>
@@ -197,7 +228,7 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   content: {
     flex: 1,
     paddingHorizontal: 30,

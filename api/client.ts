@@ -33,12 +33,18 @@ export const apiClient = async <T>(
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.log(errorText);
       throw new Error(
         `API Error: ${response.status} ${response.statusText} - ${errorText}`,
       );
     }
 
-    return (await response.json()) as T;
+    const text = await response.text();
+    try {
+      return text ? JSON.parse(text) : ({} as T);
+    } catch (e) {
+      return text as any as T;
+    }
   } catch (error) {
     throw error;
   }

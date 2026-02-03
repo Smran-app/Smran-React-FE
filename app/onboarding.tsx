@@ -13,32 +13,62 @@ import { GlassCard } from "@/components/GlassCard";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
 import logo from "@/assets/adaptive-icon.png";
-export default function Onboarding() {
-  const router = useRouter();
+import { useAppTheme } from "@/context/ThemeContext";
 
+export default function Onboarding() {
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
+  const router = useRouter();
   return (
-    <ScreenWrapper style={styles.container}>
-      <StatusBar style="dark" />
+    <ScreenWrapper
+      style={[
+        styles.container,
+        isDark && { backgroundColor: Colors.dark.background },
+      ]}
+    >
+      <StatusBar style={isDark ? "light" : "dark"} />
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image source={logo} style={styles.logoIcon} />
-          <Text style={styles.logoText}>Smran</Text>
+          <Text
+            style={[styles.logoText, isDark && { color: Colors.dark.text }]}
+          >
+            Smran
+          </Text>
         </View>
 
         <View style={styles.middleContainer}>
-          <Text style={styles.headline}>Say hello to Smran,</Text>
-          <Text style={styles.headline}>Never lets you</Text>
-          <Text style={[styles.headline, styles.highlight]}>forget</Text>
+          <Text
+            style={[styles.headline, isDark && { color: Colors.dark.text }]}
+          >
+            Say hello to Smran,
+          </Text>
+          <Text
+            style={[styles.headline, isDark && { color: Colors.dark.text }]}
+          >
+            Never lets you
+          </Text>
+          <Text
+            style={[
+              styles.headline,
+              styles.highlight,
+              isDark && { color: Colors.dark.text },
+            ]}
+          >
+            forget
+          </Text>
         </View>
 
         <View style={styles.bottomContainer}>
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, isDark && { backgroundColor: "white" }]}
             onPress={() => {
               router.replace("/login");
             }}
           >
-            <Text style={styles.buttonText}>Get started</Text>
+            <Text style={[styles.buttonText, isDark && { color: "black" }]}>
+              Get started
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -47,7 +77,7 @@ export default function Onboarding() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   content: {
     flex: 1,
     paddingHorizontal: 30,
