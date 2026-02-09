@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
   ThemeProvider as NavigationThemeProvider,
@@ -22,10 +22,46 @@ import { ThemeProvider, useAppTheme } from "@/context/ThemeContext";
 import { OnboardingProvider } from "@/app/contexts/OnboardingContext";
 import Purchases, { LOG_LEVEL } from "react-native-purchases";
 import { Platform } from "react-native";
+import ReceiveSharingIntent from "@apru2002/react-native-receive-sharing-intent";
+
 const queryClient = new QueryClient();
 
 function RootLayoutContent() {
   const { colorScheme } = useAppTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    ReceiveSharingIntent.getReceivedFiles(
+      (data: any) => {
+        console.log("RECEIVED_INTENT_LAYOUT", data);
+        if (Array.isArray(data) && data.length > 0) {
+          const item = data[0];
+          // Check for text, subject, or weblink
+          const text = item.text || item.subject || null;
+          const weblink = item.weblink || null;
+
+          if (text || weblink) {
+            router.push({
+              pathname: "/modal",
+              params: {
+                sharedTitle: text,
+                sharedLink: weblink,
+              },
+            });
+            ReceiveSharingIntent.clearReceivedFiles();
+          }
+        }
+      },
+      (err: any) => {
+        console.log("ReceiveSharingIntent Error:", err);
+      },
+      "ShareIntent",
+    );
+
+    return () => {
+      ReceiveSharingIntent.clearReceivedFiles();
+    };
+  }, []);
 
   return (
     <NavigationThemeProvider
@@ -106,19 +142,14 @@ export default function RootLayout() {
     Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
 
     // Platform-specific API keys
-    const iosApiKey = "test_kLiUXhryqSAlaZnHHjWWJuFnuWo";
-    const androidApiKey = "test_kLiUXhryqSAlaZnHHjWWJuFnuWo";
+    const iosApiKey = "appl_dqlttnmGHSNrdgghvbXahITsDOT";
+    const androidApiKey = "goog_LtyoeuxvFLeehvoHdVSpJaTHrRk";
 
     if (Platform.OS === "ios") {
       Purchases.configure({ apiKey: iosApiKey });
     } else if (Platform.OS === "android") {
       Purchases.configure({ apiKey: androidApiKey });
     }
-
-    // Get offerings
-    Purchases.getOfferings().then((offerings) => {
-      console.log("Offerings:", offerings);
-    });
   }, []);
   if (!fontsLoaded) {
     return null;

@@ -113,3 +113,49 @@ export const dismissSync = async (
     body: JSON.stringify({ reminder_id: reminder_id, device_id: device_id }),
   });
 };
+
+export const snoozeSync = async (
+  reminder_id: string,
+  device_id: string,
+  snooze_time: number,
+): Promise<void> => {
+  return apiClient<void>(`/true_sync/SNOOZE`, {
+    method: "POST",
+    useAuth: true,
+    body: JSON.stringify({
+      reminder_id: reminder_id,
+      device_id: device_id,
+      snooze_time: snooze_time,
+    }),
+  });
+};
+
+export const syncNewReminders = async (device_id: string): Promise<void> => {
+  return apiClient<void>(`/true_sync/SYNC_NEW`, {
+    method: "POST",
+    useAuth: true,
+    body: JSON.stringify({ device_id: device_id }),
+  });
+};
+
+export const deleteSync = async (
+  reminder_id: string,
+  device_id: string,
+): Promise<void> => {
+  return apiClient<void>(`/true_sync/DELETE`, {
+    method: "POST",
+    useAuth: true,
+    body: JSON.stringify({ reminder_id: reminder_id, device_id: device_id }),
+  });
+};
+
+export const editSync = async (
+  reminder_id: string,
+  device_id: string,
+): Promise<void> => {
+  return apiClient<void>(`/true_sync/EDIT`, {
+    method: "POST",
+    useAuth: true,
+    body: JSON.stringify({ reminder_id: reminder_id, device_id: device_id }),
+  });
+};

@@ -34,6 +34,8 @@ import { useAppTheme } from "@/context/ThemeContext";
 import { Colors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
+import { presentPaywall } from "@/utils/subscriptionUtils";
+import { useReminderStore } from "@/store/reminderStore";
 interface Device {
   id: string;
   name: string;
@@ -151,7 +153,13 @@ export default function ReminderProfileScreen() {
     setModalVisible(true);
   };
 
-  const handleCreateCustomProfile = () => {
+  const handleCreateCustomProfile = async () => {
+    const isPro = useReminderStore.getState().isPro;
+    if (!isPro) {
+      await presentPaywall();
+      return;
+    }
+
     const newProfile: ReminderProfile = {
       id: `custom-${Date.now()}`,
       name: "Custom Profile",

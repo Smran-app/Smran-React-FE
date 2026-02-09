@@ -7,8 +7,12 @@ import {
   ReminderResponse,
   CreateReminderPayload,
   deleteReminder as apiDeleteReminder,
+  syncNewReminders,
+  editSync,
+  deleteSync,
 } from "@/api/reminders";
 import { notificationService } from "@/utils/NotificationService";
+import * as SecureStore from "expo-secure-store";
 import {
   getAllReminders,
   upsertReminders,
@@ -18,7 +22,8 @@ import {
   LocalReminder,
   clearReminders,
 } from "@/data/repositories/reminderRepository";
-
+import ReceiveSharingIntent from "@apru2002/react-native-receive-sharing-intent";
+import Purchases from "react-native-purchases";
 export interface Reminder extends ReminderResponse {
   // We can add UI-specific fields here if needed
 }
@@ -41,6 +46,8 @@ interface ReminderState {
   deleteReminder: (id: string) => Promise<void>;
   clearReminders: () => Promise<void>;
   deletingIds: Set<string>;
+  isPro: boolean;
+  checkPremiumStatus: () => Promise<void>;
 }
 
 export const useReminderStore = create<ReminderState>((set, get) => ({
@@ -48,6 +55,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   isLoading: false,
   error: null,
   deletingIds: new Set(),
+  isPro: false,
 
   // Fetch Today & Tomorrow (for Home Screen)
   fetchHomeReminders: async () => {
@@ -195,6 +203,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       // Reschedule notification
       await notificationService.cancelReminder(id);
       await notificationService.scheduleReminder(updatedReminder);
+      const device_id = await SecureStore.getItemAsync("device_id");
+      await editSync(id, device_id || "");
     } catch (err: any) {
       set({
         error: err.message || "Failed to update reminder",
@@ -236,6 +246,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         newDeleting.delete(id);
         return { deletingIds: newDeleting };
       });
+      const device_id = await SecureStore.getItemAsync("device_id");
+      await deleteSync(id, device_id || "");
     } catch (err: any) {
       console.error("API delete failed, rolling back", err);
       // Rollback on error
@@ -258,5 +270,16 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   clearReminders: async () => {
     set({ reminders: [], isLoading: false, error: null });
     await clearReminders();
+  },
+  checkPremiumStatus: async () => {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      // Replace 'Smran Pro' with your specific Entitlement ID from RevenueCat dashboard
+      const isPremium =
+        customerInfo.entitlements.active["Smran Pro"] !== undefined;
+      set({ isPro: isPremium });
+    } catch (e) {
+      set({ isPro: false });
+    }
   },
 }));

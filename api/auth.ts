@@ -11,6 +11,8 @@ export interface DeviceInfo {
 export interface AuthPayload {
   id_token: string;
   device: DeviceInfo;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface UserDetail {
@@ -55,6 +57,8 @@ export const loginWithBackend = async (
   idToken: string,
   provider: AuthProvider,
   deviceToken: string,
+  first_name?: string,
+  last_name?: string,
 ): Promise<AuthResponse> => {
   const payload: AuthPayload = {
     id_token: idToken,
@@ -67,6 +71,8 @@ export const loginWithBackend = async (
         default: "Unknown",
       }),
     },
+    first_name,
+    last_name,
   };
   const endpoint = provider === "google" ? "/auth/google" : "/auth/apple";
 

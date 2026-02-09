@@ -8,6 +8,7 @@ import {
   ImageSourcePropType,
   ViewStyle,
   useColorScheme,
+  Linking,
 } from "react-native";
 import { GlassCard } from "./GlassCard";
 import { Colors } from "@/constants/Colors";
@@ -28,6 +29,7 @@ interface TaskCardProps {
   isOn: boolean;
   onToggle: (val: boolean) => void;
   hasLink?: boolean;
+  link?: string;
   image?: ImageSourcePropType;
   profileColor?: string; // For the dot on timeline
   isLast?: boolean;
@@ -42,6 +44,7 @@ export function TaskCard({
   isOn,
   onToggle,
   hasLink,
+  link,
   image,
   profileColor,
   isLast,
@@ -270,6 +273,21 @@ export function TaskCard({
     </View>
   );
 
+  const handleVisitLink = (url: string) => {
+    if (!url) return;
+
+    // Add https:// if missing
+    let finalUrl = url;
+    if (!url.startsWith("http")) {
+      finalUrl = `https://${url}`;
+    }
+
+    // Open in browser
+    Linking.openURL(finalUrl).catch((err) => {
+      console.error("Failed to open URL:", err);
+    });
+  };
+
   return (
     <View style={styles.wrapper}>
       {/* {renderTimeline()} */}
@@ -286,6 +304,7 @@ export function TaskCard({
                 {description}
               </Text>
             )}
+
             {frequency && (
               <View style={styles.localFlex}>
                 {frequency === "daily" ? (
@@ -325,7 +344,10 @@ export function TaskCard({
               </View>
 
               {hasLink ? (
-                <TouchableOpacity style={styles.visitBtn}>
+                <TouchableOpacity
+                  style={styles.visitBtn}
+                  onPress={() => handleVisitLink(link || "")}
+                >
                   <Text style={styles.visitText}>VISIT</Text>
                 </TouchableOpacity>
               ) : null}

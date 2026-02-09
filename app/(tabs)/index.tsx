@@ -26,6 +26,7 @@ import { getCurrentUser, UserDetail } from "@/api/auth";
 import { Skeleton } from "@/components/Skeleton";
 import { notificationService } from "@/utils/NotificationService";
 import * as SecureStore from "expo-secure-store";
+import { checkSubscriptionLimit } from "@/utils/subscriptionUtils";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -208,6 +209,7 @@ export default function DashboardScreen() {
                   isOn={item.status === "active"}
                   onToggle={() => toggleReminder(item.id, item.status)}
                   hasLink={!!item.link}
+                  link={item.link || ""}
                   image={
                     item.link_metadata?.image
                       ? { uri: item.link_metadata.image }
@@ -227,7 +229,11 @@ export default function DashboardScreen() {
       <TouchableOpacity
         style={styles.fab}
         className={`${isDark ? "bg-[#6EE7B7]" : "bg-[#7DD3FC]"}`}
-        onPress={() => router.push("/modal")}
+        onPress={async () => {
+          if (await checkSubscriptionLimit(reminders.length)) {
+            router.push("/modal");
+          }
+        }}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={32} color="#fff" />

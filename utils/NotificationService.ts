@@ -49,7 +49,7 @@ class NotificationService {
           placeholder: "Minutes...",
           submitButtonTitle: "Snooze",
         },
-        options: { opensAppToForeground: false, isDestructive: true },
+        options: { opensAppToForeground: false },
       },
       {
         identifier: "DISMISS",
@@ -64,7 +64,7 @@ class NotificationService {
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#8B5CF6",
-        sound: "alarm.wav",
+        sound: "alarm2.wav",
       });
     }
   }
@@ -79,8 +79,9 @@ class NotificationService {
 
     // 3. Schedule each date individually
     for (const [index, date] of triggerDates.entries()) {
-      // Create a unique ID for this specific instance: "reminder_ID_0", "reminder_ID_1"
-      const instanceId = `reminder_${reminder.id}_${index}`;
+      // Create a unique ID for this specific instance: "reminder_ID_MMDDYYYY"
+      const dateString = this.formatDateForId(date);
+      const instanceId = `reminder_${reminder.id}_${dateString}`;
       // can we pass the notification for same instanceId is already scheduled?
       await Notifications.scheduleNotificationAsync({
         identifier: instanceId,
@@ -91,12 +92,14 @@ class NotificationService {
           data: {
             reminderId: reminder.id, // Keep base ID for syncing
             instanceIndex: index,
+            instanceDate: dateString,
             reminderName: reminder.name,
           },
           vibrate: [200, 100, 200, 100, 200],
-          sound: "alarm.wav",
+          sound: "alarm2.wav",
           sticky: true,
           autoDismiss: false,
+          interruptionLevel: "timeSensitive",
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -111,21 +114,22 @@ class NotificationService {
   // 4. Cancel specific reminder (called when Sync received)
   async cancelReminder(reminderId: string) {
     // We must clean up all potential "unrolled" instances
-    // Since we don't know exactly how many, we cancel by pattern or just a safe range
-    const promises = [];
-    for (let i = 0; i < 20; i++) {
-      promises.push(
-        Notifications.cancelScheduledNotificationAsync(
-          `reminder_${reminderId}_${i}`,
-        ),
-      );
-    }
-    // Also try the base ID just in case
-    promises.push(
-      Notifications.cancelScheduledNotificationAsync(`reminder_${reminderId}`),
-    );
+    // Since IDs are now date-based, we can't guess them. We must search.
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const prefix = `reminder_${reminderId}_`;
+    const baseId = `reminder_${reminderId}`;
 
-    await Promise.all(promises);
+    const toCancel: string[] = [];
+
+    for (const notif of scheduled) {
+      if (notif.identifier === baseId || notif.identifier.startsWith(prefix)) {
+        toCancel.push(notif.identifier);
+      }
+    }
+
+    await Promise.all(
+      toCancel.map((id) => Notifications.cancelScheduledNotificationAsync(id)),
+    );
 
     // Dismiss from tray
     // Note: This requires knowing the specific ID in the tray.
@@ -133,11 +137,15 @@ class NotificationService {
     await Notifications.dismissAllNotificationsAsync();
   }
 
+  private formatDateForId(date: Date): string {
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    return `${mm}${dd}${yyyy}`;
+  }
+
   async checkScheduled() {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-
-    // console.log(`You have ${scheduled.length} notifications scheduled.`);
-
     scheduled.forEach((notif) => {
       // console.log("ID:", notif.identifier);
       // console.log("Body:", notif.content.body);
@@ -159,7 +167,6 @@ class NotificationService {
   async deleteAllScheduledNotifications() {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log("All scheduled notifications have been cleared.");
     } catch (error) {
       console.error("Error clearing notifications:", error);
     }

@@ -21,14 +21,23 @@ import { useAppTheme } from "@/context/ThemeContext";
 import { Modal } from "react-native";
 import { useReminderStore } from "@/store/reminderStore";
 import * as SecureStore from "expo-secure-store";
-import Purchases, { PurchasesOffering } from "react-native-purchases";
+import * as AppleAuthentication from "expo-apple-authentication";
+import Purchases, {
+  PurchasesOffering,
+  PurchasesOfferings,
+} from "react-native-purchases";
 export default function Profile() {
   const [userDetails, setUserDetails] = useState<UserDetail | null>(null);
+  const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
   const { theme, setTheme, colorScheme } = useAppTheme();
   const [showThemeModal, setShowThemeModal] = useState(false);
   const router = useRouter();
   const isDark = colorScheme === "dark";
-  const { clearReminders } = useReminderStore();
+  const {
+    clearReminders,
+    isPro,
+    checkPremiumStatus: checkStorePremiumStatus,
+  } = useReminderStore();
   const googleSignOut = async () => {
     try {
       // initiates sign out process
@@ -38,24 +47,75 @@ export default function Profile() {
     }
   };
 
+  const appleSignOut = async () => {
+    try {
+      const apple_user_id = await SecureStore.getItemAsync("apple_user_id");
+      if (apple_user_id) {
+        await AppleAuthentication.signOutAsync({ user: apple_user_id });
+      } else {
+        console.warn("No apple_user_id found for signOutAsync");
+      }
+    } catch (error) {
+      console.error("Apple signOutAsync error:", error);
+    }
+  };
+
   const handleLogout = async () => {
-    // Navigate back to login
-    await googleSignOut();
-    await SecureStore.deleteItemAsync("user");
-    await SecureStore.deleteItemAsync("access");
-    await SecureStore.deleteItemAsync("has_completed_onboarding");
-    // flush local db
-    await clearReminders();
-    router.replace("/login");
+    try {
+      const provider = await SecureStore.getItemAsync("auth");
+      if (provider === "google") {
+        await googleSignOut();
+      } else if (provider === "apple") {
+        await appleSignOut();
+      }
+
+      // Clear all session data
+      await SecureStore.deleteItemAsync("user");
+      await SecureStore.deleteItemAsync("access");
+      await SecureStore.deleteItemAsync("auth");
+      await SecureStore.deleteItemAsync("apple_user_id");
+      await SecureStore.deleteItemAsync("has_completed_onboarding");
+
+      // flush local db
+      await clearReminders();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
   const handleGoBack = () => {
     router.back();
   };
+  async function getOfferings() {
+    const offerings = await Purchases.getOfferings();
+    if (
+      offerings.current !== null &&
+      offerings.current.availablePackages.length !== 0
+    ) {
+      setOfferings(offerings);
+    }
+    // console.log("📢 offerings", JSON.stringify(offerings, null, 2));
+  }
 
+  const checkPremiumStatus = async () => {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      // Replace 'pro_access' with your specific Entitlement ID from RevenueCat dashboard
+      // return customerInfo.entitlements.active['pro_access'] !== undefined;
+      console.log("📢 customerInfo", customerInfo);
+    } catch (e) {
+      return false;
+    }
+  };
+  useEffect(() => {
+    // getOfferings();
+    checkStorePremiumStatus();
+  }, []);
   const handleBuyPro = async () => {
     try {
       const offerings = await Purchases.getOfferings();
-      const current_offering = offerings.all.smran_pro as PurchasesOffering;
+      console.log("Offerings:", offerings);
+      const current_offering = offerings.current as PurchasesOffering;
       const result = await RevenueCatUI.presentPaywall({
         offering: current_offering,
       });
@@ -133,6 +193,14 @@ export default function Profile() {
                 ]}
               >
                 {userDetails?.first_name + " " + userDetails?.last_name}
+                {isPro && (
+                  <MaterialCommunityIcons
+                    name="crown"
+                    size={20}
+                    color="#eab308"
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
               </Text>
             ) : (
               <Skeleton width={150} height={28} borderRadius={4} />
@@ -181,40 +249,45 @@ export default function Profile() {
             </TouchableOpacity>
           </GlassCard>
 
-          <GlassCard
-            style={[
-              styles.menuItem,
-              {
-                backgroundColor: isDark
-                  ? "rgba(234, 179, 8, 0.15)"
-                  : "rgba(234, 179, 8, 0.1)",
-                borderColor: "#eab308",
-              },
-            ]}
-          >
-            <TouchableOpacity style={styles.menuButton} onPress={handleBuyPro}>
-              <View style={styles.menuRow}>
-                <MaterialCommunityIcons
-                  name="crown"
+          {!isPro && (
+            <GlassCard
+              style={[
+                styles.menuItem,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(234, 179, 8, 0.15)"
+                    : "rgba(234, 179, 8, 0.1)",
+                  borderColor: "#eab308",
+                },
+              ]}
+            >
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={handleBuyPro}
+              >
+                <View style={styles.menuRow}>
+                  <MaterialCommunityIcons
+                    name="crown"
+                    size={24}
+                    color="#eab308"
+                  />
+                  <Text
+                    style={[
+                      styles.menuText,
+                      { color: isDark ? "#fde047" : "#854d0e" },
+                    ]}
+                  >
+                    Buy Smran Pro
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
                   size={24}
-                  color="#eab308"
+                  color={isDark ? "#fde047" : "#854d0e"}
                 />
-                <Text
-                  style={[
-                    styles.menuText,
-                    { color: isDark ? "#fde047" : "#854d0e" },
-                  ]}
-                >
-                  Buy Smran Pro
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={24}
-                color={isDark ? "#fde047" : "#854d0e"}
-              />
-            </TouchableOpacity>
-          </GlassCard>
+              </TouchableOpacity>
+            </GlassCard>
+          )}
 
           <GlassCard style={styles.menuItem}>
             <TouchableOpacity

@@ -8,7 +8,6 @@ export interface ReminderSection {
 
 export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
   if (!reminders || reminders.length === 0) return [];
-  //   console.log("reminders", reminders);
   // Helper to get normalized date string (YYYY-MM-DD)
   const getDateKey = (dateObj: Date) => {
     const year = dateObj.getFullYear();
@@ -119,7 +118,7 @@ export function groupRemindersByDate(reminders: Reminder[]): ReminderSection[] {
       data: tasks.sort(compareTime),
     });
   });
-
+  // console.log("sections", sections[1].data);
   return sections;
 }
 

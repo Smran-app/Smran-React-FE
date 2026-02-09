@@ -28,16 +28,20 @@ import {
   X,
   Repeat,
   RotateCw,
+  Link,
 } from "lucide-react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { BlurView } from "expo-blur";
 import { getCurrentUser, UserDetail } from "@/api/auth";
 import { useAppTheme } from "@/context/ThemeContext";
 import { Colors } from "@/constants/Colors";
+import * as SecureStore from "expo-secure-store";
 import {
   getReminderProfiles,
   ReminderProfileResponse,
 } from "@/api/reminder-profiles";
+import ReceiveSharingIntent from "@apru2002/react-native-receive-sharing-intent";
+import { syncNewReminders } from "@/api/reminders";
 
 type RepeatType = "once" | "daily" | "weekly" | "monthly" | "yearly";
 type EndsType = "never" | "on_date" | "after_occurrences";
@@ -47,7 +51,11 @@ export default function ModalScreen() {
   const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, sharedTitle, sharedLink } = useLocalSearchParams<{
+    id: string;
+    sharedTitle?: string;
+    sharedLink?: string;
+  }>();
   const { addReminder, updateReminder, reminders, isLoading } =
     useReminderStore();
 
@@ -69,6 +77,7 @@ export default function ModalScreen() {
 
   // Repeat Section
   const [showRepeatSettings, setShowRepeatSettings] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
   const [repeatType, setRepeatType] = useState<RepeatType>("once");
   const [startDate, setStartDate] = useState(new Date());
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
@@ -113,7 +122,9 @@ export default function ModalScreen() {
       const reminder = reminders.find((r) => r.id === id);
       if (reminder) {
         setName(reminder.name);
+        setDescription(reminder.description || "");
         setLink(reminder.link || "");
+        if (reminder.link) setShowLinkInput(true);
 
         const meta = reminder.repeat_metadata;
         setRepeatType(meta.frequency);
@@ -135,8 +146,23 @@ export default function ModalScreen() {
         if (meta.end_date) setEndDate(new Date(meta.end_date));
         if (meta.occurrences) setOccurrences(meta.occurrences.toString());
       }
+    } else {
+      // Pre-fill from share intent
+      if (sharedTitle) {
+        // Decode if needed, though expo router decodes query params usually.
+        // But safe to just use it.
+        const title = decodeURIComponent(sharedTitle);
+        if (title !== "null" && title !== "undefined") setName(title);
+      }
+      if (sharedLink) {
+        const url = decodeURIComponent(sharedLink);
+        if (url !== "null" && url !== "undefined") {
+          setLink(url);
+          setShowLinkInput(true);
+        }
+      }
     }
-  }, [id, reminders]); // Added dependencies
+  }, [id, reminders, sharedTitle, sharedLink]); // Added dependencies
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -196,11 +222,15 @@ export default function ModalScreen() {
         await addReminder(payload);
       }
       router.back();
+      const device_id = await SecureStore.getItemAsync("device_id");
+      await syncNewReminders(device_id || "");
     } catch (err) {
       Alert.alert(
         "Error",
         `Couldn't ${id ? "update" : "create"} reminder. Try again.`,
       );
+    } finally {
+      // ReceiveSharingIntent.clearReceivedFiles();
     }
   };
 
@@ -220,7 +250,13 @@ export default function ModalScreen() {
 
   return (
     <View style={styles.overlay}>
-      <Pressable style={styles.backdrop} onPress={() => router.back()} />
+      <Pressable
+        style={styles.backdrop}
+        onPress={() => {
+          router.back();
+          // ReceiveSharingIntent.clearReceivedFiles();
+        }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
         style={styles.keyboardView}
@@ -352,7 +388,29 @@ export default function ModalScreen() {
                   Repeat
                 </Text>
               </TouchableOpacity>
-
+              <TouchableOpacity
+                style={[
+                  styles.actionChip,
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
+                  showLinkInput && styles.actionChipActive,
+                  showLinkInput &&
+                    isDark && { borderColor: "rgba(16, 185, 129, 0.3)" },
+                ]}
+                onPress={() => setShowLinkInput(!showLinkInput)}
+              >
+                <Link size={16} color="#64748b" />
+                <Text
+                  style={[
+                    styles.actionChipText,
+                    isDark && { color: "#94A3B8" },
+                  ]}
+                >
+                  Link
+                </Text>
+              </TouchableOpacity>
               {/* <TouchableOpacity
                 style={[
                   styles.actionChip,
@@ -373,6 +431,29 @@ export default function ModalScreen() {
                 </Text>
               </TouchableOpacity> */}
             </View>
+
+            {/* Link attach optional */}
+            {/* <View style={styles.actionRow}></View> */}
+            {showLinkInput && (
+              <TextInput
+                style={[
+                  styles.actionChip,
+                  {
+                    color: "black",
+                  },
+                  isDark && {
+                    backgroundColor: "#1e293b",
+                    color: "white",
+                    borderColor: "rgba(255, 255, 255, 0.05)",
+                  },
+                ]}
+                value={link}
+                onChangeText={setLink}
+                placeholder="Link"
+                placeholderTextColor={isDark ? "#334155" : "#cbd5e1"}
+                multiline
+              />
+            )}
 
             {/* Advanced Repeat Settings */}
             {showRepeatSettings && (

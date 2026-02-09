@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@apru2002/react-native-receive-sharing-intent": "^2.0.0",
     "@expo/metro-config": "~54.0.14",
     "@expo/vector-icons": "^15.0.3",
     "@nkzw/create-context-hook": "^1.1.0",

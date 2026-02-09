@@ -25,8 +25,11 @@ import { getCurrentUser, UserDetail } from "@/api/auth";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenWrapper } from "@/components/ScreenWrapper";
 import BlinkSound from "@/assets/ding-402325.mp3";
+import { useReminderStore } from "@/store/reminderStore";
+import { checkSubscriptionLimit } from "@/utils/subscriptionUtils";
 const { width, height } = Dimensions.get("window");
 import { MetaRing } from "@/components/MetaRing";
+import { useAppTheme } from "@/context/ThemeContext";
 
 const LOADING_MESSAGES = [
   "Working on creating your reminder...",
@@ -40,6 +43,8 @@ const LOADING_MESSAGES = [
 ];
 
 export default function VoiceInputScreen() {
+  const { colorScheme } = useAppTheme();
+  const isDark = colorScheme === "dark";
   const [isRecording, setIsRecording] = useState(false);
   const [confirmedText, setConfirmedText] = useState("");
   const [interimText, setInterimText] = useState("");
@@ -54,6 +59,8 @@ export default function VoiceInputScreen() {
   const createReminderRef = useRef<((text: string) => Promise<void>) | null>(
     null,
   );
+
+  const { reminders } = useReminderStore();
 
   // Auto-stop after 5 seconds of silence
   const resetSilenceTimer = useCallback(() => {
@@ -489,13 +496,144 @@ export default function VoiceInputScreen() {
     }
   }, [buttonScaleAnim, confirmedText, interimText, createReminderFromText]);
 
-  const handlePress = useCallback(() => {
+  const handlePress = useCallback(async () => {
     if (isRecording) {
       stopRecording();
     } else {
-      startRecording();
+      if (await checkSubscriptionLimit(reminders.length)) {
+        startRecording();
+      }
     }
-  }, [isRecording, startRecording, stopRecording]);
+  }, [isRecording, startRecording, stopRecording, reminders.length]);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop: 60,
+      // backgroundColor: "#FFFFFF",
+    },
+    header: {
+      paddingTop: 60,
+    },
+    voiceHeader: {
+      paddingTop: 30,
+      paddingHorizontal: 24,
+      alignItems: "center",
+      // marginBottom: 60,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: "#6B7280",
+      letterSpacing: 2,
+      textTransform: "uppercase" as const,
+    },
+    lotusContainer: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative" as const,
+    },
+    micButton: {
+      width: "100%",
+      height: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    bottomSection: {
+      paddingBottom: 60,
+      paddingHorizontal: 24,
+      alignItems: "center",
+      minHeight: 120,
+      justifyContent: "center",
+      width: "100%",
+    },
+    hint: {
+      fontSize: 16,
+      color: "#9CA3AF",
+      letterSpacing: 1,
+      marginBottom: 150,
+    },
+    transcriptWrapper: {
+      width: "100%",
+      maxWidth: width - 18,
+      marginBottom: 120,
+    },
+    transcriptHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    transcriptLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#6B7280",
+      textTransform: "uppercase" as const,
+      letterSpacing: 1,
+    },
+    clearButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
+      backgroundColor: "rgba(239, 68, 68, 0.1)",
+    },
+    clearButtonText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#EF4444",
+    },
+    transcriptContainer: {
+      maxHeight: 200,
+      borderRadius: 20,
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      borderWidth: 1,
+      borderColor: "rgba(0, 0, 0, 0.08)",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    transcriptContent: {
+      padding: 20,
+    },
+    transcript: {
+      fontSize: 14,
+      color: "#1F2937",
+      lineHeight: 20,
+      letterSpacing: 0.3,
+    },
+    loadingContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 40,
+      width: "100%",
+      marginBottom: 120,
+    },
+    loadingMessage: {
+      fontSize: 18,
+      color: !isDark ? "#1F2937" : "#FFFFFF",
+      marginTop: 20,
+      textAlign: "center",
+      fontWeight: "500",
+      letterSpacing: 0.5,
+    },
+    successContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 40,
+      width: "100%",
+      marginBottom: 120,
+    },
+    successMessage: {
+      fontSize: 24,
+      color: "#10B981",
+      textAlign: "center",
+      fontWeight: "700",
+      letterSpacing: 0.5,
+    },
+  });
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -597,132 +735,3 @@ export default function VoiceInputScreen() {
     </ScreenWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 60,
-    // backgroundColor: "#FFFFFF",
-  },
-  header: {
-    paddingTop: 60,
-  },
-  voiceHeader: {
-    paddingTop: 30,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    // marginBottom: 60,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    letterSpacing: 2,
-    textTransform: "uppercase" as const,
-  },
-  lotusContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative" as const,
-  },
-  micButton: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bottomSection: {
-    paddingBottom: 60,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    minHeight: 120,
-    justifyContent: "center",
-    width: "100%",
-  },
-  hint: {
-    fontSize: 16,
-    color: "#9CA3AF",
-    letterSpacing: 1,
-    marginBottom: 150,
-  },
-  transcriptWrapper: {
-    width: "100%",
-    maxWidth: width - 18,
-    marginBottom: 120,
-  },
-  transcriptHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  transcriptLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase" as const,
-    letterSpacing: 1,
-  },
-  clearButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-  },
-  clearButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#EF4444",
-  },
-  transcriptContainer: {
-    maxHeight: 200,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  transcriptContent: {
-    padding: 20,
-  },
-  transcript: {
-    fontSize: 14,
-    color: "#1F2937",
-    lineHeight: 20,
-    letterSpacing: 0.3,
-  },
-  loadingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-    width: "100%",
-    marginBottom: 120,
-  },
-  loadingMessage: {
-    fontSize: 18,
-    color: "#1F2937",
-    marginTop: 20,
-    textAlign: "center",
-    fontWeight: "500",
-    letterSpacing: 0.5,
-  },
-  successContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-    width: "100%",
-    marginBottom: 120,
-  },
-  successMessage: {
-    fontSize: 24,
-    color: "#10B981",
-    textAlign: "center",
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-});

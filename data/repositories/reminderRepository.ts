@@ -13,6 +13,7 @@ export const getAllReminders = async (): Promise<LocalReminder[]> => {
   const db = await getDB();
   const result = await db.getAllAsync<any>(
     "SELECT * FROM reminders ORDER BY next_run_time ASC",
+    [],
   );
   return result.map((row) => ({
     ...row,
@@ -21,6 +22,25 @@ export const getAllReminders = async (): Promise<LocalReminder[]> => {
       : null,
     link_metadata: row.link_metadata ? JSON.parse(row.link_metadata) : null,
   }));
+};
+
+export const getLocalReminderById = async (
+  id: string,
+): Promise<LocalReminder | null> => {
+  const db = await getDB();
+  const result = await db.getAllAsync<any>(
+    "SELECT * FROM reminders WHERE id = ?",
+    [id],
+  );
+  if (result.length === 0) return null;
+  const row = result[0];
+  return {
+    ...row,
+    repeat_metadata: row.repeat_metadata
+      ? JSON.parse(row.repeat_metadata)
+      : null,
+    link_metadata: row.link_metadata ? JSON.parse(row.link_metadata) : null,
+  };
 };
 
 export const upsertReminders = async (
@@ -38,6 +58,7 @@ export const upsertReminders = async (
     if (!isPartial) {
       const existingSynced = await db.getAllAsync<{ id: string }>(
         "SELECT id FROM reminders WHERE sync_status = 'synced'",
+        [],
       );
 
       for (const row of existingSynced) {
@@ -51,11 +72,12 @@ export const upsertReminders = async (
     for (const r of reminders) {
       await db.runAsync(
         `INSERT OR REPLACE INTO reminders (
-          id, name, link, status, repeat_metadata, next_run_time, link_metadata, created_at, updated_at, user_id, sync_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          id, name, description, link, status, repeat_metadata, next_run_time, link_metadata, created_at, updated_at, user_id, sync_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
         [
           r.id,
           r.name,
+          r.description || null,
           r.link || null,
           r.status,
           JSON.stringify(r.repeat_metadata),
@@ -74,11 +96,12 @@ export const addLocalReminder = async (reminder: ReminderResponse) => {
   const db = await getDB();
   await db.runAsync(
     `INSERT OR REPLACE INTO reminders (
-          id, name, link, status, repeat_metadata, next_run_time, link_metadata, created_at, updated_at, user_id, sync_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          id, name, description, link, status, repeat_metadata, next_run_time, link_metadata, created_at, updated_at, user_id, sync_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
     [
       reminder.id,
       reminder.name,
+      reminder.description || null,
       reminder.link || null,
       reminder.status,
       JSON.stringify(reminder.repeat_metadata),

@@ -10,7 +10,7 @@ import { ScreenWrapper } from "@/components/ScreenWrapper";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import logo from "@/assets/adaptive-icon.png";
+import logo from "@/assets/AppIcon.png";
 import {
   GoogleSignin,
   GoogleSigninButton,
@@ -22,6 +22,8 @@ import { registerForPushNotificationsAsync } from "@/utils/notifications";
 import * as SecureStore from "expo-secure-store";
 import { useAppTheme } from "@/context/ThemeContext";
 import { Colors } from "@/constants/Colors";
+import { useState } from "react";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_WEB_ID,
@@ -37,6 +39,7 @@ export default function Login() {
   const { colorScheme } = useAppTheme();
   const isDark = colorScheme === "dark";
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = () => {
     // Navigate to tabs after successful "login"
@@ -54,7 +57,11 @@ export default function Login() {
   const handleLoginWithBackend = async (
     idToken: string,
     provider: "google" | "apple",
+    first_name?: string,
+    last_name?: string,
+    apple_user_id?: string,
   ) => {
+    setIsLoading(true);
     try {
       const deviceToken = await registerForPushNotificationsAsync();
       // console.log("Device Token", deviceToken);
@@ -62,10 +69,16 @@ export default function Login() {
         idToken,
         provider,
         deviceToken || "unknown_device_token",
+        first_name,
+        last_name,
       );
       console.log(`${provider} Login Success:`, data);
       await SecureStore.setItemAsync("access", data.access_token);
       await SecureStore.setItemAsync("device_id", data.device?.id || "");
+      await SecureStore.setItemAsync("auth", provider);
+      if (apple_user_id) {
+        await SecureStore.setItemAsync("apple_user_id", apple_user_id);
+      }
       if (data.is_onboarding_completed === false) {
         router.replace("/onboarding_questions");
       } else {
@@ -74,10 +87,13 @@ export default function Login() {
     } catch (error) {
       console.error(`${provider} Login Error:`, error);
       // Handle error appropriately, maybe show an alert to the user
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const googleSignIn = async () => {
+    setIsLoading(true);
     try {
       const response = await GoogleLogin();
 
@@ -90,9 +106,12 @@ export default function Login() {
       }
     } catch (error) {
       console.log("Error", error);
+    } finally {
+      setIsLoading(false);
     }
   };
   const handleSignInApple = async () => {
+    setIsLoading(true);
     try {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -101,9 +120,17 @@ export default function Login() {
         ],
       });
       // signed in
-      // console.log(credential);
+      console.log(credential);
       if (credential.identityToken) {
-        await handleLoginWithBackend(credential.identityToken, "apple");
+        const first_name = credential.fullName?.givenName || "";
+        const last_name = credential.fullName?.familyName || "";
+        await handleLoginWithBackend(
+          credential.identityToken,
+          "apple",
+          first_name,
+          last_name,
+          credential.user,
+        );
       }
       // sample response provided below
     } catch (e: any) {
@@ -114,6 +141,8 @@ export default function Login() {
         console.log("Other error");
         // handle other errors
       }
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
@@ -124,6 +153,7 @@ export default function Login() {
       ]}
     >
       <StatusBar style={isDark ? "light" : "dark"} />
+      <LoadingOverlay visible={isLoading} />
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image source={logo} style={styles.logoIcon} />
@@ -246,7 +276,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 24,
     fontWeight: "600",
-    marginTop: 10,
+    // marginTop: 10,
     color: "#1e293b",
     fontFamily: Platform.select({ ios: "System", android: "Roboto" }),
   },
