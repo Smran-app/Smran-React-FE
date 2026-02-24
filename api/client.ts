@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
-export const BASE_URL = "https://smran-python-be.onrender.com";
+export const BASE_URL = "https://smran-python-be-udjy.onrender.com";
 // export const BASE_URL = "https://0adb10de3561.ngrok-free.app";
 
 interface FetchOptions extends RequestInit {

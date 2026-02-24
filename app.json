@@ -19,7 +19,9 @@
       "bundleIdentifier": "com.smran.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "NSPhotoLibraryUsageDescription": "Allow Smran to access your photo library to upload profile picture.",
         "NSMicrophoneUsageDescription": "Allow Smran to access your microphone to record voice reminders.",
         "NSSpeechRecognitionUsageDescription": "Allow Smran to use speech recognition to convert your voice into text."
@@ -53,7 +55,10 @@
       [
         "expo-notifications",
         {
-          "sounds": ["./assets/alarm.wav", "./assets/alarm2.wav"],
+          "sounds": [
+            "./assets/alarm.wav",
+            "./assets/alarm2.wav"
+          ],
           "enableBackgroundRemoteNotifications": true
         }
       ],
@@ -77,7 +82,8 @@
           "speechRecognitionPermission": "Allow Smran to use speech recognition to convert your voice into text."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "router": {},
